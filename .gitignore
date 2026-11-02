@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Environment / secrets
+.env
+*.token.json
+token.json
+credentials.json
+
+# Local artifacts
+/tmp/
+*.log

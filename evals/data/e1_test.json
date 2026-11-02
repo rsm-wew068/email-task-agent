@@ -1,0 +1,377 @@
+{
+  "suite": "e1-v1",
+  "seed_date": "2026-11-02",
+  "scorer_version": "e1-spec-v1.1",
+  "threads": [
+    {
+      "thread_id": "e1-001-send-q3-draft",
+      "split": "test",
+      "tags": [
+        "single-task",
+        "explicit-date"
+      ],
+      "emails": [
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-02",
+          "subject": "Q3 draft for the board",
+          "body": "Hi Alex,\n\nCould you send me the revised Q3 draft by Friday so I can review it before the board meeting?\n\nThe deck is in the shared drive under Finance/2026/Q3.\n\nThanks,\nKate"
+        }
+      ],
+      "gold": [
+        {
+          "title": "Send revised Q3 draft to Kate",
+          "owner_email": "alex@fernwoodlabs.com",
+          "due_date": "2026-11-06",
+          "status": "open",
+          "evidence_sentence": "Could you send me the revised Q3 draft by Friday so I can review it before the board meeting?",
+          "email_index": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "e1-002-kickoff-scheduling",
+      "split": "test",
+      "tags": [
+        "no-task",
+        "scheduling"
+      ],
+      "emails": [
+        {
+          "from": "tom@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com",
+            "kate@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-03",
+          "subject": "Kickoff scheduling",
+          "body": "Hi both,\n\nGreat kickoff today. I'll send a calendar invite once we find a slot that works for the client.\n\nTom"
+        },
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "tom@fernwoodlabs.com",
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-03",
+          "subject": "Re: Kickoff scheduling",
+          "body": "Works for me — afternoons are better this week."
+        }
+      ],
+      "gold": []
+    },
+    {
+      "thread_id": "e1-003-newsletter-renewal",
+      "split": "test",
+      "tags": [
+        "no-task",
+        "precision-trap"
+      ],
+      "emails": [
+        {
+          "from": "newsletter@sparkmetrics.example",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-04",
+          "subject": "Spark Metrics monthly digest",
+          "body": "Your November digest is here.\n\nTop story: dashboards get faster for every plan.\n\nRenew your seat by November 15 to lock in current pricing.\n\nYou are receiving this because you subscribed at sparkmetrics.example."
+        }
+      ],
+      "gold": []
+    },
+    {
+      "thread_id": "e1-004-cc-other-owner",
+      "split": "test",
+      "tags": [
+        "no-task",
+        "scope-boundary"
+      ],
+      "emails": [
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "tom@fernwoodlabs.com"
+          ],
+          "cc": [
+            "alex@fernwoodlabs.com"
+          ],
+          "date": "2026-11-04",
+          "subject": "Staging config",
+          "body": "Tom, please update the staging config to point at the new database before Thursday's release.\n\nAlex, FYI only."
+        }
+      ],
+      "gold": []
+    },
+    {
+      "thread_id": "e1-005-asked-for-checklist",
+      "split": "test",
+      "tags": [
+        "single-task",
+        "asked-for",
+        "explicit-date"
+      ],
+      "emails": [
+        {
+          "from": "alex@fernwoodlabs.com",
+          "to": [
+            "tom@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-04",
+          "subject": "Onboarding checklist",
+          "body": "Tom, could you send me the onboarding checklist by Wednesday? We have two new starters on the 16th.\n\nAlex"
+        },
+        {
+          "from": "tom@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-05",
+          "subject": "Re: Onboarding checklist",
+          "body": "Will do — you'll have it Wednesday morning."
+        }
+      ],
+      "gold": [
+        {
+          "title": "Send me the onboarding checklist",
+          "owner_email": "tom@fernwoodlabs.com",
+          "due_date": "2026-11-04",
+          "status": "open",
+          "evidence_sentence": "Tom, could you send me the onboarding checklist by Wednesday?",
+          "email_index": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "e1-006-two-tasks-one-sentence",
+      "split": "test",
+      "tags": [
+        "multi-task",
+        "one-sentence"
+      ],
+      "emails": [
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-03",
+          "subject": "ClientCo invoice + tracker",
+          "body": "Hi Alex,\n\nPlease send the October invoice to billing@clientco.example and update the renewal tracker with the new dates by Thursday.\n\nBoth are blocking their procurement review.\n\nKate"
+        }
+      ],
+      "gold": [
+        {
+          "title": "Send October invoice to ClientCo billing",
+          "owner_email": "alex@fernwoodlabs.com",
+          "due_date": "2026-11-05",
+          "status": "open",
+          "evidence_sentence": "Please send the October invoice to billing@clientco.example and update the renewal tracker with the new dates by Thursday.",
+          "email_index": 0
+        },
+        {
+          "title": "Update renewal tracker with new dates",
+          "owner_email": "alex@fernwoodlabs.com",
+          "due_date": "2026-11-05",
+          "status": "open",
+          "evidence_sentence": "Please send the October invoice to billing@clientco.example and update the renewal tracker with the new dates by Thursday.",
+          "email_index": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "e1-007-relative-date",
+      "split": "dev",
+      "tags": [
+        "single-task",
+        "relative-date"
+      ],
+      "emails": [
+        {
+          "from": "priya@clientco.example",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-02",
+          "subject": "Integration sign-off",
+          "body": "Hi Alex,\n\nLegal cleared the DPA, so we can proceed.\n\nCan you sign the integration agreement by the end of the week? After that we can schedule the joint test.\n\nPriya"
+        }
+      ],
+      "gold": [
+        {
+          "title": "Sign the ClientCo integration agreement",
+          "owner_email": "alex@fernwoodlabs.com",
+          "due_date": "2026-11-06",
+          "status": "open",
+          "evidence_sentence": "Can you sign the integration agreement by the end of the week?",
+          "email_index": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "e1-008-deadline-move",
+      "split": "dev",
+      "tags": [
+        "single-task",
+        "update",
+        "deadline-move"
+      ],
+      "emails": [
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-02",
+          "subject": "Security questionnaire",
+          "body": "Hi Alex,\n\nClientCo's security team needs our questionnaire. Please send the completed security questionnaire by Thursday next week.\n\nKate"
+        },
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-05",
+          "subject": "Re: Security questionnaire",
+          "body": "Update: compliance moved the audit up. Can you get the security questionnaire to me by Monday instead?\n\nSorry for the squeeze."
+        }
+      ],
+      "gold": [
+        {
+          "title": "Send completed security questionnaire to Kate",
+          "owner_email": "alex@fernwoodlabs.com",
+          "due_date": "2026-11-09",
+          "status": "open",
+          "evidence_sentence": "Can you get the security questionnaire to me by Monday instead?",
+          "email_index": 1
+        }
+      ]
+    },
+    {
+      "thread_id": "e1-009-no-due-date",
+      "split": "dev",
+      "tags": [
+        "single-task",
+        "no-date"
+      ],
+      "emails": [
+        {
+          "from": "priya@clientco.example",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-03",
+          "subject": "Integration notes",
+          "body": "Hi Alex,\n\nI pushed the integration notes to the shared folder.\n\nWhen you get a chance, can you look over the integration notes and flag anything risky?\n\nNo rush, but before the joint test would be ideal.\n\nPriya"
+        }
+      ],
+      "gold": [
+        {
+          "title": "Review ClientCo integration notes",
+          "owner_email": "alex@fernwoodlabs.com",
+          "due_date": null,
+          "status": "open",
+          "evidence_sentence": "When you get a chance, can you look over the integration notes and flag anything risky?",
+          "email_index": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "e1-010-fyi-deck",
+      "split": "dev",
+      "tags": [
+        "no-task",
+        "fyi"
+      ],
+      "emails": [
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com",
+            "tom@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-04",
+          "subject": "Board deck v2",
+          "body": "Attached is board deck v2 for your awareness. No action needed on your side — comments close Friday."
+        }
+      ],
+      "gold": []
+    },
+    {
+      "thread_id": "e1-011-recurring-standup-notes",
+      "split": "dev",
+      "tags": [
+        "single-task",
+        "recurring"
+      ],
+      "emails": [
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-02",
+          "subject": "Standup notes",
+          "body": "Hi Alex,\n\nStarting this week, can you post the weekly standup notes every Friday to the team channel? It keeps the async folks in the loop.\n\nKate"
+        }
+      ],
+      "gold": [
+        {
+          "title": "Post weekly standup notes",
+          "owner_email": "alex@fernwoodlabs.com",
+          "due_date": "2026-11-06",
+          "status": "open",
+          "evidence_sentence": "Starting this week, can you post the weekly standup notes every Friday to the team channel?",
+          "email_index": 0
+        }
+      ]
+    },
+    {
+      "thread_id": "e1-012-ambiguous-owner",
+      "split": "dev",
+      "tags": [
+        "single-task",
+        "ambiguous-owner"
+      ],
+      "emails": [
+        {
+          "from": "kate@fernwoodlabs.com",
+          "to": [
+            "alex@fernwoodlabs.com",
+            "tom@fernwoodlabs.com"
+          ],
+          "cc": [],
+          "date": "2026-11-04",
+          "subject": "Pen test prep",
+          "body": "Team,\n\nThe external pen test starts Nov 20. Someone from Alex's team should refresh the staging SSL cert before the pen test starts.\n\nI'll coordinate access with the vendor.\n\nKate"
+        }
+      ],
+      "gold": [
+        {
+          "title": "Refresh staging SSL cert before pen test",
+          "owner_email": null,
+          "due_date": "2026-11-20",
+          "status": "open",
+          "evidence_sentence": "Someone from Alex's team should refresh the staging SSL cert before the pen test starts.",
+          "email_index": 0
+        }
+      ]
+    }
+  ]
+}

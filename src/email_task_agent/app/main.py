@@ -261,7 +261,12 @@ def create_app(deps: Deps) -> FastAPI:
 
 
 def build_default_app() -> FastAPI:
-    """Neon + OpenAI when configured; otherwise an in-memory seeded demo."""
+    """Neon + OpenAI when configured; otherwise an in-memory seeded demo.
+
+    Without DATABASE_URL an instance cannot be the real private one, so the
+    effective mode downgrades to "demo" regardless of INSTANCE_MODE (D8: demo
+    holds synthetic data only; the badge reflects what is actually wired).
+    """
     import os
 
     from email_task_agent.config import settings
@@ -280,6 +285,7 @@ def build_default_app() -> FastAPI:
         from email_task_agent.memory import MemoryStore
 
         store = MemoryStore()
+    mode = settings().instance_mode if settings().database_url else "demo"
 
     from email_task_agent.demo.seed import seed_demo_instance
 
@@ -292,9 +298,9 @@ def build_default_app() -> FastAPI:
     if settings().openai_api_key:
         from email_task_agent.chat.service import ChatService
 
-        chat_service = ChatService(store, model_name, mode=settings().instance_mode, me=owner_email)
+        chat_service = ChatService(store, model_name, mode=mode, me=owner_email)
 
-    if settings().instance_mode == "private" and settings().openai_api_key:
+    if mode == "private" and settings().openai_api_key:
         from email_task_agent.pipeline.extract import ExtractionAgent
         from email_task_agent.pipeline.sync import SyncService
 
@@ -325,7 +331,7 @@ def build_default_app() -> FastAPI:
         sync_runner = run_sync
         reextract_runner = run_reextract
 
-    deps = Deps(store=store, mode=settings().instance_mode, owner_email=owner_email, chat=chat_service, sync_runner=sync_runner, reextract_runner=reextract_runner)
+    deps = Deps(store=store, mode=mode, owner_email=owner_email, chat=chat_service, sync_runner=sync_runner, reextract_runner=reextract_runner)
     return create_app(deps)
 
 

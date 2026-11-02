@@ -109,6 +109,9 @@ class Store(Protocol):
         """(processed, unprocessed) message id sets for a thread."""
 
     def open_tasks_for(self, participant_emails: list[str]) -> list[ExistingTask]: ...
+    def tasks_in_thread(self, thread_db_id: int) -> list[TaskRow]:
+        """All tasks (any status) attached to one thread — per-thread seeding guard."""
+
     def apply_thread_ops(
         self, thread_db_id: int, output: ReconcileOutput, *, new_message_ids: list[str], history_id: str | None
     ) -> list[int]:
@@ -235,6 +238,23 @@ def mark_messages_processed(conn: psycopg.Connection, message_ids: list[str]) ->
         "update thread_messages set processed_at = now() where gmail_message_id = any(%s)",
         (message_ids,),
     )
+
+
+def tasks_in_thread_db(conn: psycopg.Connection, thread_db_id: int) -> list[TaskRow]:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            select t.id, t.title, p.email, p.display_name, t.due_date, t.status,
+                   t.confidence, t.needs_review, t.thread_id, th.gmail_thread_id
+            from tasks t
+            left join people p on p.id = t.owner_person_id
+            left join threads th on th.id = t.thread_id
+            where t.thread_id = %s
+            order by t.id
+            """,
+            (thread_db_id,),
+        )
+        return [TaskRow(*r) for r in cur.fetchall()]
 
 
 def open_tasks_as_existing(conn: psycopg.Connection, participant_emails: list[str]) -> list[ExistingTask]:
@@ -831,6 +851,9 @@ class PostgresStore:
 
     def open_tasks_for(self, participant_emails):
         return self._run(lambda c: open_tasks_as_existing(c, participant_emails))
+
+    def tasks_in_thread(self, thread_db_id):
+        return self._run(lambda c: tasks_in_thread_db(c, thread_db_id))
 
     def apply_thread_ops(self, thread_db_id, output, *, new_message_ids, history_id):
         def fn(conn: psycopg.Connection) -> list[int]:

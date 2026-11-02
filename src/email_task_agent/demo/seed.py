@@ -71,9 +71,8 @@ def seed_demo_instance(store: Store, *, owner_email: str, data_dir: Path | None 
         gold = gold_by_thread.get(thread_id, [])
         if not gold:
             continue
-        owner = owner_email.casefold()
-        if store.open_tasks_for([owner, *participants]):
-            continue  # tasks already exist for these people: keep restart idempotent
+        if store.tasks_in_thread(thread_db_id):
+            continue  # this thread's tasks already seeded: keep restart idempotent
         inserts = []
         for item in gold:
             inserts.append(

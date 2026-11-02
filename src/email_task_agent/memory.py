@@ -172,6 +172,10 @@ class MemoryStore:
                 out.append(self._existing(task))
         return out
 
+    def tasks_in_thread(self, thread_db_id):
+        return [self._task_row(t) for t in sorted(self.tasks.values(), key=lambda t: t.id)
+                if t.thread_id == thread_db_id]
+
     def _event(self, task_id: int, kind: str, old: dict | None, new: dict | None, source_message_id: str | None) -> None:
         self.events.append(EventRow(self._id("event"), task_id, datetime.now(), kind, old, new, source_message_id))
 

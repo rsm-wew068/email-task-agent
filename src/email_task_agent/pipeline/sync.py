@@ -16,7 +16,7 @@ email_task_agent.gmail.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import datetime
 
 from email_task_agent.pipeline.extract import ExtractInput, ExtractMessage
 from email_task_agent.pipeline.reconcile import reconcile
@@ -179,4 +179,4 @@ def reextract_thread(store: Store, client: GmailClientProtocol, extract_fn, *, o
     service = SyncService(store, client, extract_fn, owner_email=owner_email, cap_per_run=1)
     thread = client.fetch_single(gmail_thread_id)
     store.reset_thread_processed(gmail_thread_id)
-    return service._process_thread(thread)  # noqa: SLF001 - intentional single-thread entry
+    return service._process_thread(thread)

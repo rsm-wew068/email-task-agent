@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pydantic_ai.agent import Agent
 from pydantic_ai.messages import ToolCallPart
 from pydantic_ai.models import Model
-from pydantic_ai.tools import DeferredToolRequests, DeferredToolResults, ToolDenied
+from pydantic_ai.tools import DeferredToolRequests, ToolDenied
 
 from email_task_agent.agent.chat import ChatDeps, build_chat_agent
 from email_task_agent.store import Store, deserialize_messages, pending_to_dict, serialize_messages
@@ -78,11 +78,14 @@ class ChatService:
         return self._persist_output(session, result)
 
     def approve(self, session_id: int, expected_version: int, decisions: dict[str, bool]) -> TurnResult:
-        """Resume a paused run. A version mismatch is a stale form: no-op."""
+        """Resume a paused run (from awaiting_approval, or from failed — e.g.
+        the process crashed mid-run and the user retries the same form).
+        A version mismatch is a stale form: no-op."""
         session = self.store.chat_get(session_id)
         if session is None:
             raise ChatError(f"unknown session {session_id}")
-        if session.state != "awaiting_approval" or session.version != expected_version:
+        resumable = session.state in {"awaiting_approval", "failed"} and session.pending_approvals
+        if not resumable or session.version != expected_version:
             return TurnResult(session_id, session.version, session.state, stale=True)
 
         requests = _rebuild_requests(session.pending_approvals)
@@ -110,9 +113,15 @@ class ChatService:
                 deferred_tool_results=results,
                 deps=deps,
             )
-        except Exception as error:  # noqa: BLE001
-            self._finish(session, state="failed", error=str(error))
-            return TurnResult(session_id, claimed, "failed", error=str(error))
+        except Exception as error:  # noqa: BLE001 - keep pending so the same form can be retried
+            new_version = self.store.chat_cas(
+                session_id,
+                claimed,
+                messages=session.messages,
+                pending_approvals=session.pending_approvals,
+                state="failed",
+            )
+            return TurnResult(session_id, new_version or claimed, "failed", error=str(error))
         return self._persist_output(session, result, claimed_version=claimed)
 
     # -- internals ----------------------------------------------------------------------

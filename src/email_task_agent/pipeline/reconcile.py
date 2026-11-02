@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from email_task_agent.models.extraction import NewTask
-from email_task_agent.pipeline.validate import ValidatedExtraction, ValidatedNew, ValidatedUpdate
+from email_task_agent.pipeline.validate import ValidatedExtraction, ValidatedNew
 
 DUPLICATE_WINDOW_DAYS = 7
 

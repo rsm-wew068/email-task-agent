@@ -34,18 +34,18 @@ _WEEKDAYS = {
 }
 
 _MONTHS = {
-    "january": 1,
-    "february": 2,
-    "march": 3,
-    "april": 4,
+    "january": 1, "jan": 1,
+    "february": 2, "feb": 2,
+    "march": 3, "mar": 3,
+    "april": 4, "apr": 4,
     "may": 5,
-    "june": 6,
-    "july": 7,
-    "august": 8,
-    "september": 9,
-    "october": 10,
-    "november": 11,
-    "december": 12,
+    "june": 6, "jun": 6,
+    "july": 7, "jul": 7,
+    "august": 8, "aug": 8,
+    "september": 9, "sep": 9, "sept": 9,
+    "october": 10, "oct": 10,
+    "november": 11, "nov": 11,
+    "december": 12, "dec": 12,
 }
 
 _ISO_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
@@ -114,11 +114,18 @@ def resolve_due_date(raw: str | None, anchor: date) -> date | None:
 
     if m := _MONTH_DAY_RE.match(text):
         month = _MONTHS.get(m.group(1).casefold())
-        return _month_day(anchor, month, int(m.group(2))) if month else None
+        if month:
+            resolved = _month_day(anchor, month, int(m.group(2)))
+            if resolved:
+                return resolved
+        # Not a known month (or impossible day): fall through to later rules.
 
     if m := _DAY_MONTH_RE.match(text):
         month = _MONTHS.get(m.group(2).casefold())
-        return _month_day(anchor, month, int(m.group(1))) if month else None
+        if month:
+            resolved = _month_day(anchor, month, int(m.group(1)))
+            if resolved:
+                return resolved
 
     if m := _DAY_NUM_RE.match(text):
         day = int(m.group(1))

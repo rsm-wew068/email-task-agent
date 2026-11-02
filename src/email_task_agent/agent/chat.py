@@ -139,52 +139,53 @@ def build_chat_agent(model: Model) -> Agent[ChatDeps, str]:
             return f"Nothing to change on #{task_id}."
         return f"Updated #{task_id}: {', '.join(changed)}."
 
-    # -- external writes: approval-gated, idempotent by tool_call_id ---------------
+    # -- external writes: approval-gated, at-most-once by tool_call_id -----------------
 
-    @agent.tool_plain(requires_approval=True)
+    def _send_external(ctx: RunContext[ChatDeps], kind: str, args: dict, execute) -> str:
+        """Shared idempotency gate (§8.2): record BEFORE anything; mark 'sent'
+        immediately before the external call so a crash after the call leaves a
+        row whose retry refuses to send again (no duplicate, ever)."""
+        action_id, is_new = ctx.deps.store.action_record(kind, args, ctx.tool_call_id)
+        previous = ctx.deps.store.action_get(action_id)
+        if not is_new and previous["status"] == "executed":
+            return f"Already executed earlier (id={previous['external_id']}); no duplicate sent."
+        if not is_new and previous["status"] == "approved":
+            return (
+                "A previous attempt appears to have sent this action but crashed before "
+                "confirming. NOT resending (at-most-once). Check Gmail/Calendar/Tasks and "
+                "create it manually if it is missing."
+            )
+        ctx.deps.store.action_mark_sent(action_id)
+        if ctx.deps.mode == "demo":
+            external_id = f"demo-{kind}-{uuid.uuid4().hex[:8]}"
+        else:
+            external_id = execute()
+        ctx.deps.store.action_mark_executed(action_id, external_id)
+        return f"Created (id={external_id})."
+
+    @agent.tool(requires_approval=True)
     def create_gmail_draft(ctx: RunContext[ChatDeps], to: str, subject: str, body: str) -> str:
         """Create a Gmail draft (requires user approval)."""
-        action_id, is_new = ctx.deps.store.action_record(
-            "create_gmail_draft", {"to": to, "subject": subject, "body": body}, ctx.tool_call_id
+        return _send_external(
+            ctx, "create_gmail_draft", {"to": to, "subject": subject, "body": body},
+            lambda: ctx.deps.gmail.create_draft(to, subject, body),
         )
-        if not is_new and (previous := ctx.deps.store.action_get(action_id)) and previous["status"] == "executed":
-            return f"Draft already created earlier (id={previous['external_id']}); no duplicate sent."
-        if ctx.deps.mode == "demo":
-            external_id = f"demo-draft-{uuid.uuid4().hex[:8]}"
-        else:
-            external_id = ctx.deps.gmail.create_draft(to, subject, body)
-        ctx.deps.store.action_mark_executed(action_id, external_id)
-        return f"Draft created (id={external_id})."
 
-    @agent.tool_plain(requires_approval=True)
+    @agent.tool(requires_approval=True)
     def create_calendar_event(ctx: RunContext[ChatDeps], summary: str, start: str, end: str) -> str:
         """Create a calendar event (requires user approval). ISO datetimes."""
-        action_id, is_new = ctx.deps.store.action_record(
-            "create_calendar_event", {"summary": summary, "start": start, "end": end}, ctx.tool_call_id
+        return _send_external(
+            ctx, "create_calendar_event", {"summary": summary, "start": start, "end": end},
+            lambda: create_event_external(ctx.deps, summary, start, end),
         )
-        if not is_new and (previous := ctx.deps.store.action_get(action_id)) and previous["status"] == "executed":
-            return f"Event already created earlier (id={previous['external_id']}); no duplicate sent."
-        if ctx.deps.mode == "demo":
-            external_id = f"demo-event-{uuid.uuid4().hex[:8]}"
-        else:
-            external_id = create_event_external(ctx.deps, summary, start, end)
-        ctx.deps.store.action_mark_executed(action_id, external_id)
-        return f"Event created (id={external_id})."
 
-    @agent.tool_plain(requires_approval=True)
+    @agent.tool(requires_approval=True)
     def create_google_task(ctx: RunContext[ChatDeps], title: str, due: str | None = None) -> str:
         """Create a Google Task (requires user approval)."""
-        action_id, is_new = ctx.deps.store.action_record(
-            "create_google_task", {"title": title, "due": due}, ctx.tool_call_id
+        return _send_external(
+            ctx, "create_google_task", {"title": title, "due": due},
+            lambda: create_task_external(ctx.deps, title, due),
         )
-        if not is_new and (previous := ctx.deps.store.action_get(action_id)) and previous["status"] == "executed":
-            return f"Task already created earlier (id={previous['external_id']}); no duplicate sent."
-        if ctx.deps.mode == "demo":
-            external_id = f"demo-task-{uuid.uuid4().hex[:8]}"
-        else:
-            external_id = create_task_external(ctx.deps, title, due)
-        ctx.deps.store.action_mark_executed(action_id, external_id)
-        return f"Google Task created (id={external_id})."
 
     return agent
 
@@ -216,6 +217,7 @@ def _demo_mail_search(store: Store, query: str) -> list[dict]:
 def create_event_external(deps: ChatDeps, summary: str, start: str, end: str) -> str:
     """Private-mode Calendar write; built lazily so demo never imports it."""
     from googleapiclient.discovery import build as google_build
+
     from email_task_agent.gmail.client import load_credentials
 
     calendar = google_build("calendar", "v3", credentials=load_credentials(".credentials/token.json"))
@@ -228,6 +230,7 @@ def create_event_external(deps: ChatDeps, summary: str, start: str, end: str) ->
 
 def create_task_external(deps: ChatDeps, title: str, due: str | None) -> str:
     from googleapiclient.discovery import build as google_build
+
     from email_task_agent.gmail.client import load_credentials
 
     tasks = google_build("tasks", "v1", credentials=load_credentials(".credentials/token.json"))

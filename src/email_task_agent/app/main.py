@@ -10,13 +10,13 @@ from __future__ import annotations
 
 import calendar as pycalendar
 import json
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Callable
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from email_task_agent import __version__
@@ -160,7 +160,6 @@ def create_app(deps: Deps) -> FastAPI:
         """Serialized ModelMessages -> simple display rows."""
         out: list[dict] = []
         for message in messages:
-            kind = message.get("kind")
             for part in message.get("parts", []):
                 part_kind = part.get("part_kind")
                 if part_kind == "user-prompt":
@@ -176,9 +175,8 @@ def create_app(deps: Deps) -> FastAPI:
 
     def _session_id(request: Request, form_session_id: str | None) -> int:
         raw = form_session_id or request.cookies.get("chat_session")
-        if raw and raw.isdigit() and deps.chat is not None:
-            if deps.chat.session(int(raw)) is not None:
-                return int(raw)
+        if raw and raw.isdigit() and deps.chat is not None and deps.chat.session(int(raw)) is not None:
+            return int(raw)
         return deps.chat.create_session()
 
     def _chat_panel_context(session_row, *, error: str | None = None) -> dict:
@@ -209,9 +207,12 @@ def create_app(deps: Deps) -> FastAPI:
 
     @app.post("/chat", response_class=HTMLResponse)
     async def chat_post(request: Request, message: str = Form(""), session_id: str = Form("")):
+        import anyio
+
         sid = _session_id(request, session_id)
         try:
-            result = deps.chat.run_turn(sid, message)
+            # run_sync needs its own event loop: offload to a worker thread.
+            result = await anyio.to_thread.run_sync(lambda: deps.chat.run_turn(sid, message))
         except ChatError as exc:
             session = deps.chat.session(sid)
             response = render(request, "_chat_panel.html", **_chat_panel_context(session, error=str(exc)))
@@ -227,6 +228,8 @@ def create_app(deps: Deps) -> FastAPI:
 
     @app.post("/chat/approve", response_class=HTMLResponse)
     async def chat_approve(request: Request):
+        import anyio
+
         form = await request.form()
         sid = int(form.get("session_id", "0"))
         version = int(form.get("version", "-1"))
@@ -236,7 +239,9 @@ def create_app(deps: Deps) -> FastAPI:
             if key.startswith("decision_")
         }
         try:
-            result = deps.chat.approve(sid, version, decisions)
+            result = await anyio.to_thread.run_sync(
+                lambda: deps.chat.approve(sid, version, decisions)
+            )
         except ChatError as exc:
             session = deps.chat.session(sid)
             response = render(request, "_chat_panel.html", **_chat_panel_context(session, error=str(exc)))

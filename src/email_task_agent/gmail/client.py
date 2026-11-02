@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.message import EmailMessage
 
 from google.auth.transport.requests import Request
@@ -125,8 +125,8 @@ class GmailClient:
                 body = body[:20_000] + "\n[truncated]"
 
             internal_date = datetime.fromtimestamp(
-                int(raw.get("internalDate", "0")) / 1000, tz=timezone.utc
-            ) if raw.get("internalDate") else datetime.now(timezone.utc)
+                int(raw.get("internalDate", "0")) / 1000, tz=UTC
+            ) if raw.get("internalDate") else datetime.now(UTC)
 
             messages.append(
                 SyncMessage(

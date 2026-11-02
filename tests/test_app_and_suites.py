@@ -11,12 +11,17 @@ from email_task_agent.models.extraction import NewTask, TaskUpdate, ThreadExtrac
 
 
 def test_healthz() -> None:
-    client = TestClient(create_app())
+    from email_task_agent.app.main import Deps
+    from email_task_agent.memory import MemoryStore
+
+    app = create_app(Deps(store=MemoryStore(), mode="demo", owner_email="alex@x.example"))
+    client = TestClient(app)
     res = client.get("/healthz")
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "ok"
     assert body["version"]
+    assert body["mode"] == "demo"
 
 
 def test_thread_extraction_contract() -> None:

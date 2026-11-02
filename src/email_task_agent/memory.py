@@ -11,10 +11,7 @@ from datetime import date, datetime
 from email_task_agent.pipeline.reconcile import (
     ApplyUpdate,
     ExistingTask,
-    InsertTask,
     MergeOps,
-    ReconcileOutput,
-    Suggest,
 )
 from email_task_agent.store import (
     ChatSessionRow,
@@ -199,8 +196,9 @@ class MemoryStore:
         for upd in output.updates:
             self._apply_update(upd)
         for sug in output.suggestions:
-            self.suggestions[self._id("suggestion")] = SuggestionRow(
-                id=self._next["suggestion"] - 1, kind=sug.kind, task_id=sug.task_id,
+            suggestion_id = self._id("suggestion")  # key and row.id must match
+            self.suggestions[suggestion_id] = SuggestionRow(
+                id=suggestion_id, kind=sug.kind, task_id=sug.task_id,
                 other_task_id=sug.other_task_id, payload=sug.payload, status="pending", created_at=datetime.now(),
             )
         for message_id in new_message_ids:
@@ -292,6 +290,10 @@ class MemoryStore:
         action_id = self._id("action")
         self.actions[action_id] = _Action(action_id, kind, args, "proposed", None, tool_call_id)
         return action_id, True
+
+    def action_mark_sent(self, action_id):
+        if self.actions[action_id].status == "proposed":
+            self.actions[action_id].status = "approved"
 
     def action_mark_executed(self, action_id, external_id):
         action = self.actions[action_id]

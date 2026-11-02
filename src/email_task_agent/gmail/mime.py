@@ -6,7 +6,7 @@ from __future__ import annotations
 import email
 import email.policy
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 
 _QUOTED_REPLY_RE = re.compile(r"^(on .+wrote:|from:\s.*sent:.*|_{5,|-{5,})\s*$", re.IGNORECASE | re.MULTILINE)
@@ -104,8 +104,8 @@ def parse_internal_date(message) -> datetime:
         try:
             parsed = parsedate_to_datetime(raw)
             if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=timezone.utc)
+                parsed = parsed.replace(tzinfo=UTC)
             return parsed
         except (TypeError, ValueError):
             pass
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)

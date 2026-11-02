@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Install Playwright chromium (browser tests)
+        run: uv run playwright install chromium --with-deps
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Unit + pipeline + chat + web + browser tests
+        run: uv run pytest
+
+      - name: E1 smoke eval (null extractor, harness sanity)
+        run: uv run python -m email_task_agent.evals.e1
+
+      - name: E2 reconciliation gate (must pass 100%)
+        run: uv run python -m email_task_agent.evals.e2
+
+      - name: E1-U wrong-link harness
+        run: uv run python -m email_task_agent.evals.e1u --extractor scripted:perfect --baseline evals/baselines/e1u_baseline.json

@@ -140,6 +140,10 @@ class Store(Protocol):
         Returns (action_id, is_new); a retry after a crash gets the original
         row back (is_new=False) and must NOT resend."""
 
+    def action_mark_sent(self, action_id: int) -> None:
+        """proposed -> approved: set immediately BEFORE the external call, so a
+        crash after the call leaves 'approved' and the retry refuses to send."""
+
     def action_mark_executed(self, action_id: int, external_id: str) -> None: ...
     def action_get(self, action_id: int) -> dict | None: ...
 
@@ -713,6 +717,13 @@ def action_record_db(conn: psycopg.Connection, kind: str, args: dict, tool_call_
         return cur.fetchone()[0], False
 
 
+def action_mark_sent_db(conn: psycopg.Connection, action_id: int) -> None:
+    conn.execute(
+        "update actions set status = 'approved', updated_at = now() where id = %s and status = 'proposed'",
+        (action_id,),
+    )
+
+
 def action_mark_executed_db(conn: psycopg.Connection, action_id: int, external_id: str) -> None:
     conn.execute(
         "update actions set status = 'executed', external_id = %s, updated_at = now() where id = %s",
@@ -760,6 +771,9 @@ class PostgresStore:
 
     def action_record(self, kind, args, tool_call_id):
         return self._run(lambda c: action_record_db(c, kind, args, tool_call_id))
+
+    def action_mark_sent(self, action_id):
+        return self._run(lambda c: action_mark_sent_db(c, action_id))
 
     def action_mark_executed(self, action_id, external_id):
         return self._run(lambda c: action_mark_executed_db(c, action_id, external_id))

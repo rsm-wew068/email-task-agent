@@ -18,7 +18,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from email_task_agent.gmail.client import SCOPES  # noqa: E402
+from email_task_agent.gmail.client import SCOPES
 
 
 def main() -> int:

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>email-task-agent</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    :root { --ink:#1a1a24; --paper:#f6f6f8; --line:#dddde4; --accent:#3b5bdb; --warn:#b8860b; }
+    * { box-sizing: border-box; }
+    body { font: 15px/1.5 -apple-system, "Segoe UI", sans-serif; color: var(--ink);
+           max-width: 960px; margin: 0 auto; padding: 1rem; background: var(--paper); }
+    nav { display: flex; gap: 1rem; align-items: baseline; border-bottom: 2px solid var(--ink); padding-bottom: .5rem; margin-bottom: 1rem; }
+    nav h1 { font-size: 1.1rem; margin: 0; }
+    nav a { color: var(--ink); text-decoration: none; padding: .2rem .4rem; border-radius: 4px; }
+    nav a:hover { background: #e8e8ee; }
+    table { border-collapse: collapse; width: 100%; margin: .5rem 0; background: #fff; }
+    th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: #666; }
+    .badge { display: inline-block; font-size: .72rem; padding: .1rem .45rem; border-radius: 10px; background: #e8e8ee; }
+    .badge.open { background: #dbe4ff; } .badge.done { background: #d3f9d8; } .badge.cancelled { background: #eee; }
+    .review { border-left: 4px solid var(--warn); background: #fff8e6; padding: .6rem .8rem; margin: .5rem 0; }
+    button, .btn { font: inherit; padding: .3rem .7rem; border: 1px solid var(--ink); background: #fff;
+                    border-radius: 6px; cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.approve { background: #2f9e44; border-color: #2f9e44; color: #fff; }
+    button.deny { background: #e03131; border-color: #e03131; color: #fff; }
+    .spinner { display: none; }
+    .htmx-request .spinner { display: inline-block; }
+    .chat { display: flex; flex-direction: column; gap: .5rem; }
+    .msg { padding: .5rem .8rem; border-radius: 8px; max-width: 75%; }
+    .msg.user { align-self: flex-end; background: #dbe4ff; }
+    .msg.bot { align-self: flex-start; background: #fff; border: 1px solid var(--line); }
+    .msg .evidence { font-size: .85em; color: #555; }
+    .approval { border: 1px solid var(--warn); background: #fff8e6; padding: .8rem; border-radius: 8px; }
+    .approval pre { background: #fff; padding: .5rem; overflow-x: auto; font-size: .85rem; }
+    .approval .decide { display: flex; gap: .5rem; margin-top: .4rem; }
+    .muted { color: #666; } .error { color: #c92a2a; }
+    .calendar td { height: 72px; width: 14.2%; } .calendar .othermonth { color: #aaa; background: #fafafa; }
+    .calendar .today { outline: 2px solid var(--accent); }
+    .cal-event { font-size: .78rem; background: #dbe4ff; border-radius: 4px; padding: .05rem .3rem; margin: .1rem 0; display: block; color: var(--ink); text-decoration: none; }
+    form.inline { display: inline; }
+    input[type=search], input[type=text] { font: inherit; padding: .3rem .5rem; }
+    section { margin: 1.2rem 0; }
+    h2 { font-size: 1rem; margin: .4rem 0; }
+  </style>
+</head>
+<body>
+  <nav>
+    <h1>📧 email-task-agent</h1>
+    <a href="/">Tasks</a>
+    <a href="/calendar">Calendar</a>
+    <a href="/chat">Chat</a>
+    <span class="badge">{{ mode }}</span>
+  </nav>
+  {% block content %}{% endblock %}
+</body>
+</html>

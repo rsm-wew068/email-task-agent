@@ -307,7 +307,11 @@ def build_api_router(deps: Deps) -> APIRouter:
         chat = _chat_or_503()
         _resolve_session(chat, session_id)
         try:
-            result = chat.approve(session_id, body.version, body.decisions)
+            result = chat.approve(
+                session_id,
+                body.version,
+                {call_id: decision == "approve" for call_id, decision in body.decisions.items()},
+            )
         except ChatError as exc:
             session = _resolve_session(chat, session_id)
             view = _chat_session_view(session)

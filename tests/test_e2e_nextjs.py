@@ -15,11 +15,12 @@ import socket
 import subprocess
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import pytest
 import uvicorn
+from playwright._impl._errors import Error as playwright_error
 from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
@@ -168,7 +169,7 @@ def next_port(backend_port: int):
         try:
             urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)
             break
-        except Exception:
+        except OSError:
             if proc.poll() is not None:
                 raise RuntimeError("next start exited early")
             time.sleep(0.3)
@@ -238,8 +239,8 @@ def test_rapid_double_click_executes_once(page):
     page.click("[data-testid=approve-submit]")
     try:
         page.click("[data-testid=approve-submit]", timeout=500)
-    except Exception:
-        pass  # form already swapped away — the server-side CAS decides anyway
+    except playwright_error:  # form already swapped away; the server-side CAS decides anyway
+        pass
     page.wait_for_selector("text=Created (id=")
     assert [store.action_get(i)["status"] for i in store.actions] == ["executed"]
 

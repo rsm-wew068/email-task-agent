@@ -15,8 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from email_task_agent.app.main import Deps, create_app  # noqa: E402
-from email_task_agent.memory import MemoryStore  # noqa: E402
+from email_task_agent.app.main import Deps, create_app
+from email_task_agent.memory import MemoryStore
 
 OUT = Path(__file__).resolve().parents[1] / "web" / "openapi.json"
 

@@ -254,6 +254,9 @@ def create_app(deps: Deps) -> FastAPI:
             context["error"] = result.error
         return render(request, "_chat_panel.html", **context)
 
+    from email_task_agent.app.api import build_api_router
+
+    app.include_router(build_api_router(deps))
     return app
 
 

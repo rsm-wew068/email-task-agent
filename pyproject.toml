@@ -44,5 +44,8 @@ addopts = "-q"
 line-length = 100
 src = ["src", "tests"]
 
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Query"]
+
 [tool.uv]
 package = true

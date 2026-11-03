@@ -16,4 +16,4 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 EXPOSE 8080
 # Factory mode: wires Neon + OpenAI from env when present, else the seeded demo.
-CMD ["sh", "-c", "uvicorn email_task_agent.app.main:app_factory --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "uvicorn email_task_agent.app.main:app_factory --factory --host 0.0.0.0 --port ${PORT:-7860}"]

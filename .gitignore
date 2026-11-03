@@ -20,3 +20,6 @@ credentials.json
 # Local artifacts
 /tmp/
 *.log
+.vercel
+.env*
+.env.local

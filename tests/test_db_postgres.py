@@ -1,5 +1,4 @@
-"""PostgresStore against a REAL Postgres (the SQL surface was previously only
-exercised via the memory twin).
+"""PostgresStore against a REAL Postgres.
 
 Runs whenever a Postgres is reachable at POSTGRES_TEST_URL (defaults to the
 local docker container used by this repo: `docker run --name eta-pg-check

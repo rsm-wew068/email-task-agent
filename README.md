@@ -1,7 +1,7 @@
 # email-task-agent
 
 Gmail threads in, deduplicated status-tracked tasks out, plus an approval-gated chat
-agent over your own task data (implementation plan rev 5).
+agent over your own task data.
 
 **Live demo** (public, synthetic data only): https://rsm-wew068-email-task-agent.hf.space —
 chat runs on DeepSeek via the HF Inference Providers router, with automatic failover to

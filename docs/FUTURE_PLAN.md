@@ -2,8 +2,8 @@
 
 What the prototype does next (the implementation plan's M2), and the limitations we
 are carrying deliberately — each with the fix we would apply given more time. Several
-of these are honest deviations from plan rev 5; they are listed here rather than
-hidden.
+of these are honest deviations from the original plan; they are listed here rather
+than hidden.
 
 ## Next up
 

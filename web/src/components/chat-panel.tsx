@@ -52,7 +52,7 @@ export default function ChatPanel() {
         window.localStorage.setItem(SESSION_KEY, String(view.session_id));
         setSession(view);
       } catch {
-        setLoadError(true); // "unavailable" only for a recorded load failure
+        setLoadError(true);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,9 +1,7 @@
 """Boot resilience: the app factory must never block or crash on the database.
 
-Managed poolers (Supavisor) deregister tenants transiently (free-tier
-pause/wake, restores, known registry bugs). Boot wires a lazy store and
-prepare_database() retries migrate+seed in the background; pages show the
-offline banner until the pooler cooperates.
+Boot wires a lazy store and prepare_database() retries migrate+seed in the
+background; pages show the offline banner until it lands.
 """
 
 from __future__ import annotations
@@ -50,7 +48,7 @@ def test_prepare_database_rides_out_transient_failures(monkeypatch):
     prepare_database(store, owner_email="a@x", _sleep=sleeps.append)
 
     assert migrates == [1] and seeds == [1]
-    assert sleeps == [2.0, 4.0]  # exponential backoff while the pooler was down
+    assert sleeps == [2.0, 4.0]  # exponential backoff
 
 
 def test_prepare_database_raises_after_finite_attempts(monkeypatch):
@@ -62,9 +60,8 @@ def test_prepare_database_raises_after_finite_attempts(monkeypatch):
 
 
 def test_build_default_app_boots_without_a_reachable_database(monkeypatch):
-    """THE property the deployed Space depends on: a bogus DATABASE_URL must not
-    crash or block boot — the app serves healthz while the background prepare
-    loop keeps retrying."""
+    """A bogus DATABASE_URL must not crash or block boot: the app serves
+    healthz while the background prepare loop keeps retrying."""
     from fastapi.testclient import TestClient
 
     from email_task_agent.app.main import build_default_app

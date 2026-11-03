@@ -151,12 +151,12 @@ def test_crash_after_api_call_retry_never_sends_twice():
     assert paused.state == "awaiting_approval"
 
     # First approve: the tool marks the action 'approved' (sent), then the
-    # external call crashes -> run fails, pending kept for retry.
+    # injected crash fails the run with the pending approval kept.
     failed = service.approve(session_id, paused.version, {"tc1": True})
     assert failed.state == "failed" and failed.error
     assert gmail.calls == 1
 
-    # Retry from the same form: the gate sees status 'approved' and refuses.
+    # Retrying the same form: the gate sees status 'approved' and refuses.
     retry = service.approve(session_id, failed.version, {"tc1": True})
     assert retry.state == "idle"
     assert gmail.calls == 1  # never sent twice

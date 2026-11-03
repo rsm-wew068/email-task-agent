@@ -5,8 +5,8 @@ Loads the checked-in suites (evals/data/) into any Store:
   - e1_test.json gold         -> starter tasks, inserted only when the store
     has none for those threads (idempotent across restarts).
 
-The public demo also works with no OPENAI_API_KEY: browse tasks/calendar and
-chat against the seeded data (external writes stubbed in demo mode).
+The public demo also works with no LLM key: browse tasks/calendar and chat
+against the seeded data (external writes stubbed in demo mode).
 """
 
 from __future__ import annotations

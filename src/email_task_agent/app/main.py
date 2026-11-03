@@ -32,11 +32,9 @@ def prepare_database(
 ) -> None:
     """Migrate + seed AFTER boot, retrying with backoff.
 
-    Boot must never block on the database: managed poolers (Supavisor) deregister
-    tenants transiently (free-tier pause/wake, restores, known registry bugs), and
-    a crash during that window makes a deployed container flap on "app starting".
-    While this loop is waiting, pages render the offline banner; once it lands,
-    everything self-heals (seeding is idempotent per thread).
+    Boot must never block on the database: while this loop is waiting, pages
+    render the offline banner; once it lands, everything self-heals (seeding is
+    idempotent per thread).
     """
     from email_task_agent.db import connect, migrate
     from email_task_agent.demo.seed import seed_demo_instance
@@ -126,9 +124,8 @@ def build_default_app() -> FastAPI:
             fallback_model=openrouter_fallback(),
         )
     elif mode == "demo":
-        # Keyless demo: a SCRIPTED MOCK LLM (clearly labeled — the case-study
-        # brief allows labeled mocks) so reviewers can run the whole workflow,
-        # including the approval flow, with zero accounts or keys.
+        # Keyless demo: scripted mock LLM (labeled in the UI) so the whole
+        # approval flow runs with zero keys.
         from email_task_agent.llm_mock import build_mock_model
 
         chat_service = ChatService(store, build_mock_model(), mode=mode, me=owner_email)

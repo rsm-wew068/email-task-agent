@@ -13,9 +13,8 @@ import psycopg
 
 from email_task_agent.config import settings
 
-# Repo checkout: <root>/migrations. When installed as a wheel (the Docker Space)
-# the module lives under site-packages, so fall back to the working directory's
-# copy — else migrate() silently applies zero files and seeding fails.
+# In a wheel install (the Space image) the module lives under site-packages, so
+# also accept a copy in the working directory.
 _MIGRATIONS_CANDIDATES = [Path(__file__).resolve().parents[2] / "migrations", Path.cwd() / "migrations"]
 MIGRATIONS_DIR = next((p for p in _MIGRATIONS_CANDIDATES if p.is_dir()), _MIGRATIONS_CANDIDATES[0])
 
@@ -25,8 +24,7 @@ def connect() -> psycopg.Connection:
     if not url:
         raise RuntimeError("DATABASE_URL is not set; see .env.example")
     # prepare_threshold=None disables automatic prepared statements, which
-    # transaction-mode poolers (Supabase's port-6543 pooler, some proxies)
-    # reject. Any managed Postgres — Neon, Supabase, Render, Railway — works.
+    # transaction-mode poolers (Supabase's port-6543 pooler, some proxies) reject.
     return psycopg.connect(url, autocommit=False, prepare_threshold=None)
 
 

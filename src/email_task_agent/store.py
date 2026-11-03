@@ -125,7 +125,7 @@ class Store(Protocol):
     def update_task_fields(self, task_id: int, *, title: str | None = None, due_date: date | None = None, clear_due: bool = False) -> bool: ...
 
     def chat_turns_today(self) -> int:
-        """LLM chat turns recorded today (demo spend cap, review finding 2)."""
+        """LLM chat turns recorded today (demo spend cap)."""
     def record_chat_turn(self) -> None: ...
 
     # -- chat (§8.2 state machine) -------------------------------------------------

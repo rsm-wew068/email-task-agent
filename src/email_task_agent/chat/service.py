@@ -59,8 +59,6 @@ class ChatService:
         self.agent = agent or build_chat_agent(model)
         # Demo spend control (plan §11): None disables the cap (private instance).
         self.daily_turn_cap = daily_turn_cap
-        # Runtime failover: provider-level errors on the primary (HF throttled /
-        # out of credits / down) retry this same request on the fallback model.
         self.fallback_model = fallback_model
 
     def create_session(self) -> int:
@@ -74,7 +72,7 @@ class ChatService:
     def run_turn(self, session_id: int, user_text: str) -> TurnResult:
         session = self._claim(session_id, user_text is not None)
         if self.daily_turn_cap is not None and self.store.chat_turns_today() >= self.daily_turn_cap:
-            # Release the claim: put the session back exactly as it was.
+            # Cap hit: release the claim.
             restored = self.store.chat_cas(
                 session_id,
                 session.version,
@@ -113,8 +111,8 @@ class ChatService:
             return TurnResult(session_id, session.version, session.state, stale=True)
 
         # build_results raises a bare ValueError for unknown IDs and silently
-        # accepts missing ones — require an exact match instead (review
-        # finding 6): a direct server-action call can send anything.
+        # accepts missing ones — require an exact match instead: a direct
+        # server-action call can send anything.
         pending_ids = {
             item["tool_call_id"]
             for item in (
@@ -172,7 +170,7 @@ class ChatService:
         they are our bug and a second provider would only mask them."""
         try:
             return self.agent.run_sync(**kwargs)
-        except Exception as error:  # re-raised unless the fallback serves
+        except Exception as error:
             if self.fallback_model is None or not provider_failure(error):
                 raise
             return self.agent.run_sync(**kwargs, model=self.fallback_model)

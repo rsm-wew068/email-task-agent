@@ -11,7 +11,7 @@ export default function ErrorPage({
 }) {
   // Server Component error messages are redacted in production builds, so no
   // message matching here — the offline banner lives in the layout, which
-  // knows the real state (review finding 9).
+  // knows the real state.
   return (
     <main className="my-12 flex flex-col items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-10 text-center">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-500">

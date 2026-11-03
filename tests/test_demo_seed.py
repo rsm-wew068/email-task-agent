@@ -22,8 +22,7 @@ def test_seed_lands_all_gold_tasks() -> None:
     assert len(store.list_threads()) == SEED_THREAD_COUNT
 
     titles = {t.title for t in tasks}
-    # Tasks from DIFFERENT threads must all land (regression: a global guard
-    # silently dropped every thread after the first).
+    # Tasks from different threads must all land.
     assert "Send revised Q3 draft to Kate" in titles
     assert "Send me the onboarding checklist" in titles
     assert "Refresh staging SSL cert before pen test" in titles  # ownerless gold
@@ -33,7 +32,7 @@ def test_seed_is_idempotent_per_thread() -> None:
     store = MemoryStore()
     seed_demo_instance(store, owner_email="alex@fernwoodlabs.com")
     seed_demo_instance(store, owner_email="alex@fernwoodlabs.com")
-    assert len(store.list_tasks()) == SEED_GOLD_COUNT  # no duplicates on re-seed
+    assert len(store.list_tasks()) == SEED_GOLD_COUNT
 
 
 def test_seed_respects_existing_thread_tasks() -> None:
@@ -65,4 +64,4 @@ def test_seed_respects_existing_thread_tasks() -> None:
     seed_demo_instance(store, owner_email="alex@fernwoodlabs.com")
     after = {t.title for t in store.list_tasks()}
     assert "Synced task" in after
-    assert len(after) == len(before) + 1  # re-seed added nothing else
+    assert len(after) == len(before) + 1

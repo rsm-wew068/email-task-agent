@@ -82,7 +82,7 @@ export async function runSync(_prev: string | null, _formData: FormData): Promis
 export async function getChatSession(sessionId: number): Promise<ChatSessionView | null> {
   assertId(sessionId);
   // Only a 404 means "session gone" (create a new one). A transient 500/503
-  // must NOT abandon a session that may be awaiting approval (review finding 4).
+  // must NOT abandon a session that may be awaiting approval.
   const { data, error, response } = await backend.GET("/api/chat/sessions/{session_id}", {
     params: { path: { session_id: sessionId } },
   });

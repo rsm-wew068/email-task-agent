@@ -74,9 +74,33 @@ uv run uvicorn email_task_agent.app.main:app_factory --reload
 npm --prefix web run dev         # BACKEND_URL defaults to http://127.0.0.1:8000
 ```
 
-Open http://127.0.0.1:3000. With `OPENAI_API_KEY` set the chat runs on a real model
-(demo writes stay stubbed). Private instance: set `DATABASE_URL` (Neon) + `OPENAI_API_KEY`
-+ `INSTANCE_MODE=private`, run `python scripts/auth_gmail.py`, press *Sync now*.
+Open http://127.0.0.1:3000. With an LLM key set, the chat runs on **GLM-5.3-Flash via
+Z.ai** by default (demo writes stay stubbed; the demo chat is capped at 100 turns/day —
+plan §11). Private instance: set `DATABASE_URL` (Neon), run `python scripts/auth_gmail.py`,
+press *Sync now*.
+
+### Where to put the API key
+
+Everything lives in **`.env` at the repo root** (gitignored — copy from `.env.example`):
+
+```bash
+LLM_API_KEY=<your Z.ai key>            # falls back to OPENAI_API_KEY if you prefer OpenAI
+# LLM_BASE_URL=https://api.z.ai/api/paas/v4/   # the default; any OpenAI-compatible endpoint works
+# CHAT_MODEL=glm-5.3-flash                     # defaults shown; override for the D3 bake-off
+# EXTRACTION_MODEL=glm-5.3-flash
+DATABASE_URL=postgresql://...                  # optional; without it you get the in-memory demo
+INSTANCE_MODE=private                          # only meaningful with DATABASE_URL
+```
+
+Restart the backend after editing `.env`; the chat page then works against GLM.
+
+> **Private-instance security**: the dev scripts bind to `127.0.0.1` on purpose, and the
+> backend is reachable only server-side. Before ever exposing the private instance to a
+> network, add authentication; on a shared network another machine could otherwise call
+> server actions (read tasks, approve drafts). The public demo (synthetic data only) is
+> protected against unbounded LLM spend by the daily turn cap — put a spend limit at the
+> provider too, and use Cloud Run ingress/IAM so only the Next.js server reaches the
+> backend.
 
 ## Checks
 

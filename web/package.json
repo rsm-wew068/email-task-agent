@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 127.0.0.1",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "gen:api": "openapi-typescript openapi.json -o src/lib/api-schema.ts"
+  },
+  "engines": {
+    "node": ">=26"
   },
   "dependencies": {
     "next": "16.4.4",

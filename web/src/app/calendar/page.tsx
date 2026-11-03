@@ -12,11 +12,15 @@ export default async function CalendarPage({
 }) {
   const { month } = await searchParams;
   const timeZone = process.env.APP_TIME_ZONE ?? "UTC";
-  const grid = monthGrid(month ?? currentMonth(timeZone));
+  // Malformed ?month= falls back to the current month instead of NaN dates.
+  const valid = month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? month : undefined;
+  const grid = monthGrid(valid ?? currentMonth(timeZone));
 
+  // Query the VISIBLE grid (leading/trailing days from neighboring months),
+  // not just the month — parity with what the grid renders (review finding 3).
   const tasks = await unwrap(
     backend.GET("/api/calendar", {
-      params: { query: { start: grid.first, end: grid.last } },
+      params: { query: { start: grid.weeks[0][0].iso, end: grid.weeks[grid.weeks.length - 1][6].iso } },
     }),
   );
   const byDate = new Map<string, TaskView[]>();

@@ -163,6 +163,37 @@ def test_crash_after_api_call_retry_never_sends_twice():
     assert "NOT resending" in (retry.reply or "")
 
 
+def test_daily_turn_cap_blocks_without_spending():
+    store = MemoryStore()
+    service = make_service(store, FunctionModel(draft_script), )
+    service.daily_turn_cap = 1
+
+    first = service.run_turn(service.create_session(), "draft it")
+    assert first.state == "awaiting_approval" and store.chat_turns_today() == 1
+
+    session_id = first.session_id
+    final = service.approve(session_id, first.version, {"tc1": True})  # approvals are free
+    assert final.state == "idle"
+
+    second = service.run_turn(session_id, "one more")
+    assert second.error and "cap reached" in second.error
+    assert store.chat_turns_today() == 1  # the blocked turn did not spend
+    session = store.chat_get(session_id)
+    assert session.state == "idle"  # session restored, not stuck running
+
+
+def test_approve_requires_exactly_the_pending_ids():
+    store = MemoryStore()
+    service = make_service(store, FunctionModel(draft_script))
+    session_id = service.create_session()
+    paused = service.run_turn(session_id, "draft it")
+
+    for bad in ({"tcX": True}, {"tc1": True, "tc2": False}, {}):
+        with pytest.raises(ChatError, match="exactly the pending"):
+            service.approve(session_id, paused.version, bad)
+    assert store.actions == {}  # nothing executed on malformed decisions
+
+
 def test_run_turn_guardrails():
     store = MemoryStore()
     service = make_service(store, FunctionModel(draft_script))

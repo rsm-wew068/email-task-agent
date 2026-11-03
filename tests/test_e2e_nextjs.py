@@ -20,7 +20,6 @@ from pathlib import Path
 
 import pytest
 import uvicorn
-from playwright._impl._errors import Error as playwright_error
 from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
@@ -158,9 +157,10 @@ def backend_port():
 def next_port(backend_port: int):
     port = _free_port()
     env = dict(os.environ, BACKEND_URL=f"http://127.0.0.1:{backend_port}", NODE_ENV="production")
+    # DEVNULL: an unread pipe fills up if Next prints enough and blocks the server.
     proc = subprocess.Popen(
         [str(WEB / "node_modules" / ".bin" / "next"), "start", "--port", str(port)],
-        cwd=WEB, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        cwd=WEB, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     import urllib.request
 
@@ -232,15 +232,19 @@ def test_deny_does_not_execute(page):
     assert store.actions == {}  # a denied call never records an action row
 
 
-def test_rapid_double_click_executes_once(page):
+def test_double_submit_races_reach_server_once(page):
+    """Two real submits race (requestSubmit doesn't check `disabled`); the
+    server-side version CAS decides that only one executes."""
     page, _port = page
     store = install_app(model=FunctionModel(single_draft_script))
     send_and_wait(page)
-    page.click("[data-testid=approve-submit]")
-    try:
-        page.click("[data-testid=approve-submit]", timeout=500)
-    except playwright_error:  # form already swapped away; the server-side CAS decides anyway
-        pass
+    page.evaluate(
+        """() => {
+            const form = document.querySelector('[data-testid=approval-form]');
+            form.requestSubmit();
+            form.requestSubmit();
+        }"""
+    )
     page.wait_for_selector("text=Created (id=")
     assert [store.action_get(i)["status"] for i in store.actions] == ["executed"]
 

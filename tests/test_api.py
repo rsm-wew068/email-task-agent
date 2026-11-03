@@ -3,17 +3,25 @@ routes are removed. The API contract is what the Next.js app consumes."""
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
-from email_task_agent.app.main import Deps, create_app
+from email_task_agent.app.deps import Deps
+from email_task_agent.app.main import create_app
 from email_task_agent.chat.service import ChatService
 from email_task_agent.demo.seed import seed_demo_instance
 from email_task_agent.memory import MemoryStore
 from email_task_agent.pipeline.reconcile import InsertTask, ReconcileOutput, Suggest
 
 OWNER = "alex@fernwoodlabs.com"
+
+_SUITE = json.loads((Path(__file__).resolve().parents[1] / "evals" / "data" / "e1_test.json").read_text())
+SEED_GOLD_COUNT = sum(len(t["gold"]) for t in _SUITE["threads"])
+SEED_DATED_COUNT = sum(1 for t in _SUITE["threads"] for g in t["gold"] if g.get("due_date"))
 
 
 def make_client(*, chat_model=None, sync_runner=None, reextract_runner=None, store=None):
@@ -62,7 +70,7 @@ def test_meta_wiring_flags():
 def test_task_board_lists_seeded_tasks():
     client, _ = make_client()
     body = client.get("/api/tasks").json()
-    assert len(body["tasks"]) == 9
+    assert len(body["tasks"]) == SEED_GOLD_COUNT
     task = next(t for t in body["tasks"] if t["title"] == "Send revised Q3 draft to Kate")
     assert task["status"] == "open" and task["merged"] is False
     assert body["threads"], "threads present for re-extract buttons"
@@ -84,7 +92,7 @@ def test_task_board_status_filter_and_empty_filters():
     assert [t["id"] for t in done["tasks"]] == [first.id]
     # untouched filter form sends empty strings -> "no filter"
     everything = client.get("/api/tasks", params={"q": "", "status": ""}).json()
-    assert len(everything["tasks"]) == 9
+    assert len(everything["tasks"]) == SEED_GOLD_COUNT
 
 
 # -- calendar --------------------------------------------------------------------------
@@ -93,7 +101,7 @@ def test_task_board_status_filter_and_empty_filters():
 def test_calendar_range_returns_due_tasks():
     client, _ = make_client()
     body = client.get("/api/calendar", params={"start": "2026-11-01", "end": "2026-11-30"}).json()
-    assert len(body) == 8  # seeded gold tasks with due dates in November 2026
+    assert len(body) == SEED_DATED_COUNT  # gold tasks with due dates
     assert all(t["due_date"] for t in body)
 
 

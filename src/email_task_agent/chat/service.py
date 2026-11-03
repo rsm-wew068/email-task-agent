@@ -48,12 +48,15 @@ class ChatService:
         me: str,
         gmail=None,
         agent: Agent[ChatDeps, str] | None = None,
+        daily_turn_cap: int | None = None,
     ):
         self.store = store
         self.mode = mode
         self.me = me
         self.gmail = gmail
         self.agent = agent or build_chat_agent(model)
+        # Demo spend control (plan §11): None disables the cap (private instance).
+        self.daily_turn_cap = daily_turn_cap
 
     def create_session(self) -> int:
         return self.store.chat_create()
@@ -65,6 +68,22 @@ class ChatService:
 
     def run_turn(self, session_id: int, user_text: str) -> TurnResult:
         session = self._claim(session_id, user_text is not None)
+        if self.daily_turn_cap is not None and self.store.chat_turns_today() >= self.daily_turn_cap:
+            # Release the claim: put the session back exactly as it was.
+            restored = self.store.chat_cas(
+                session_id,
+                session.version,
+                messages=session.messages,
+                pending_approvals=session.pending_approvals,
+                state=session.state,
+            )
+            return TurnResult(
+                session_id,
+                restored or session.version,
+                session.state,
+                error=f"Daily demo chat cap reached ({self.daily_turn_cap} turns/day) — try again tomorrow.",
+            )
+        self.store.record_chat_turn()
         deps = self._deps()
         try:
             result = self.agent.run_sync(
@@ -87,6 +106,21 @@ class ChatService:
         resumable = session.state in {"awaiting_approval", "failed"} and session.pending_approvals
         if not resumable or session.version != expected_version:
             return TurnResult(session_id, session.version, session.state, stale=True)
+
+        # build_results raises a bare ValueError for unknown IDs and silently
+        # accepts missing ones — require an exact match instead (review
+        # finding 6): a direct server-action call can send anything.
+        pending_ids = {
+            item["tool_call_id"]
+            for item in (
+                session.pending_approvals.get("approvals", []) + session.pending_approvals.get("calls", [])
+            )
+        }
+        if set(decisions) != pending_ids:
+            raise ChatError(
+                f"decisions must cover exactly the pending actions {sorted(pending_ids)}; "
+                f"got {sorted(decisions)}"
+            )
 
         requests = _rebuild_requests(session.pending_approvals)
         results = requests.build_results(

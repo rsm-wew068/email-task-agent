@@ -39,7 +39,9 @@ export async function unwrap<T>(
   return data as T;
 }
 
-/** Same, but maps HTTP errors to null instead of throwing (e.g. 404 session). */
+/** Null on ANY non-OK status — for /api/meta, where any failure means "offline".
+ *  (Chat session lookup must distinguish 404 from transient errors and does
+ *  its own handling in actions.ts.) */
 export async function unwrapOrNull<T>(
   promise: Promise<{ data?: T; error?: unknown; response: Response }>,
 ): Promise<T | null> {

@@ -12,6 +12,7 @@ them server-side via BACKEND_URL. Semantics per §3.2:
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from typing import Any, Literal
 
@@ -19,7 +20,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from email_task_agent import __version__
-from email_task_agent.app.main import Deps
+from email_task_agent.app.deps import Deps
 from email_task_agent.chat.service import ChatError, pending_actions_for_ui
 from email_task_agent.store import SuggestionRow, TaskRow, ThreadRow
 
@@ -155,7 +156,6 @@ def _thread_view(row: ThreadRow) -> ThreadView:
 
 
 def _chat_session_view(session) -> ChatSessionView:
-    roles = {"user": "user"}
     messages = []
     for message in session.messages:
         for part in message.get("parts", []):
@@ -166,11 +166,10 @@ def _chat_session_view(session) -> ChatSessionView:
                 messages.append(ChatMessageView(role="assistant", text=str(part.get("content"))))
             elif part_kind == "tool-call":
                 args = part.get("args")
-                args_text = args if isinstance(args, str) else str(args)
+                args_text = args if isinstance(args, str) else json.dumps(args)
                 messages.append(
                     ChatMessageView(role="tool_call", text=f"{part.get('tool_name')}({args_text})")
                 )
-    del roles
     return ChatSessionView(
         session_id=session.id,
         version=session.version,

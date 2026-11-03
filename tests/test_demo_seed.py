@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from email_task_agent.demo.seed import seed_demo_instance
 from email_task_agent.memory import MemoryStore
+
+_SUITE = json.loads((Path(__file__).resolve().parents[1] / "evals" / "data" / "e1_test.json").read_text())
+SEED_GOLD_COUNT = sum(len(t["gold"]) for t in _SUITE["threads"])
+SEED_THREAD_COUNT = sum(1 for t in _SUITE["threads"]) + 8  # + demo-only extras
 
 
 def test_seed_lands_all_gold_tasks() -> None:
@@ -11,9 +18,8 @@ def test_seed_lands_all_gold_tasks() -> None:
     message = seed_demo_instance(store, owner_email="alex@fernwoodlabs.com")
 
     tasks = store.list_tasks()
-    # e1_test.json has 9 gold tasks across 6 gold-bearing threads (12 total).
-    assert len(tasks) == 9, message
-    assert len(store.list_threads()) == 20
+    assert len(tasks) == SEED_GOLD_COUNT, message
+    assert len(store.list_threads()) == SEED_THREAD_COUNT
 
     titles = {t.title for t in tasks}
     # Tasks from DIFFERENT threads must all land (regression: a global guard
@@ -27,7 +33,7 @@ def test_seed_is_idempotent_per_thread() -> None:
     store = MemoryStore()
     seed_demo_instance(store, owner_email="alex@fernwoodlabs.com")
     seed_demo_instance(store, owner_email="alex@fernwoodlabs.com")
-    assert len(store.list_tasks()) == 9  # no duplicates on re-seed
+    assert len(store.list_tasks()) == SEED_GOLD_COUNT  # no duplicates on re-seed
 
 
 def test_seed_respects_existing_thread_tasks() -> None:

@@ -12,6 +12,20 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     instance_mode: str = "private"  # private | demo (D8: demo never holds real mail)
 
+    # LLM wiring (plan §D3 via bake-off). Z.ai's API is OpenAI-compatible, so
+    # any provider that speaks that protocol works through LLM_BASE_URL.
+    llm_api_key: str | None = None  # falls back to OPENAI_API_KEY
+    llm_base_url: str = "https://api.z.ai/api/paas/v4/"
+    chat_model: str = "glm-5.3-flash"
+    extraction_model: str = "glm-5.3-flash"
+
+    # Demo spend cap: max LLM chat turns per calendar day (plan §11).
+    demo_daily_turn_cap: int = 100
+
+    @property
+    def api_key(self) -> str | None:
+        return self.llm_api_key or self.openai_api_key
+
 
 @lru_cache
 def settings() -> Settings:

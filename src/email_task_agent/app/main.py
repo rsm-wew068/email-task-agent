@@ -3,30 +3,19 @@
 The browser never talks to this app — the Next.js server calls it server-side
 via BACKEND_URL. Dependency injection keeps everything testable: create_app()
 takes a Deps object (store, chat service, sync runner); build_default_app()
-wires the real thing from settings — Neon Postgres + OpenAI when configured,
-otherwise an in-memory seeded demo instance (mode=demo, external writes
-stubbed).
+wires the real thing from settings — Neon Postgres + the configured LLM when
+present, otherwise an in-memory seeded demo instance (mode=demo, external
+writes stubbed).
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
-
 from fastapi import FastAPI
 
 from email_task_agent import __version__
-from email_task_agent.chat.service import ChatService
+from email_task_agent.app.deps import Deps
 
-
-@dataclass
-class Deps:
-    store: object
-    mode: str  # demo | private
-    owner_email: str
-    chat: ChatService | None = None
-    sync_runner: Callable[[], str] | None = None  # returns a banner message
-    reextract_runner: Callable[[str], str] | None = None
+__all__ = ["Deps", "app_factory", "build_default_app", "create_app"]
 
 
 def create_app(deps: Deps) -> FastAPI:
@@ -46,18 +35,15 @@ def create_app(deps: Deps) -> FastAPI:
 
 
 def build_default_app() -> FastAPI:
-    """Neon + OpenAI when configured; otherwise an in-memory seeded demo.
+    """Neon + a configured LLM when present; otherwise an in-memory seeded demo.
 
     Without DATABASE_URL an instance cannot be the real private one, so the
     effective mode downgrades to "demo" regardless of INSTANCE_MODE (D8: demo
     holds synthetic data only; the badge reflects what is actually wired).
     """
-    import os
-
     from email_task_agent.config import settings
 
     owner_email = "alex@fernwoodlabs.com"
-    model_name = os.environ.get("CHAT_MODEL", "openai:gpt-4o-mini")
 
     if settings().database_url:
         from email_task_agent.db import connect, migrate
@@ -80,14 +66,26 @@ def build_default_app() -> FastAPI:
     sync_runner = None
     reextract_runner = None
 
-    if settings().openai_api_key:
-        chat_service = ChatService(store, model_name, mode=mode, me=owner_email)
+    if settings().api_key:
+        from email_task_agent.chat.service import ChatService
+        from email_task_agent.llm import build_model
 
-    if mode == "private" and settings().openai_api_key:
+        # Demo spend control (plan §11: 100 turns/day); unlimited when private.
+        cap = settings().demo_daily_turn_cap if mode == "demo" else None
+        chat_service = ChatService(
+            store,
+            build_model(settings().chat_model),
+            mode=mode,
+            me=owner_email,
+            daily_turn_cap=cap,
+        )
+
+    if mode == "private" and settings().api_key:
+        from email_task_agent.llm import build_model
         from email_task_agent.pipeline.extract import ExtractionAgent
         from email_task_agent.pipeline.sync import SyncService
 
-        extraction = ExtractionAgent(os.environ.get("EXTRACTION_MODEL", "openai:gpt-4o-mini"))
+        extraction = ExtractionAgent(build_model(settings().extraction_model))
 
         def make_service() -> SyncService:
             from email_task_agent.gmail.client import GmailClient, build_gmail

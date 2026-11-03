@@ -1,10 +1,10 @@
-import { reextractThread } from "@/app/actions";
 import ReviewQueue from "@/components/review-queue";
+import ReextractButton from "@/components/reextract-button";
 import SubmitButton from "@/components/submit-button";
 import SyncControls from "@/components/sync-controls";
 import TaskTable from "@/components/task-table";
 import { backend, unwrap } from "@/lib/backend";
-import type { MetaView, TaskBoardView } from "@/lib/types";
+import type { TaskBoardView } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -75,9 +75,8 @@ export default async function TasksPage({
                 <td className="px-2 py-2 text-gray-500">{t.participants.join(", ")}</td>
                 <td className="px-2 py-2 text-gray-500">{t.last_message_at ?? "—"}</td>
                 <td className="px-2 py-2">
-                  <form action={reextractThread.bind(null, t.gmail_thread_id)}>
-                    <SubmitButton>Re-extract</SubmitButton>
-                  </form>
+                  {/* Re-extract needs the Gmail pipeline: only offer it where sync works. */}
+                  {meta.sync_enabled && <ReextractButton gmailThreadId={t.gmail_thread_id} />}
                 </td>
               </tr>
             ))}
@@ -94,5 +93,3 @@ export default async function TasksPage({
     </main>
   );
 }
-
-export type { MetaView, TaskBoardView };

@@ -9,11 +9,14 @@ export default async function ChatPage() {
   return (
     <main>
       <section className="my-4">
-        {meta?.chat_enabled ? (
+        {meta === null ? (
+          <p className="text-gray-500">The backend is not responding — see the notice above.</p>
+        ) : meta.chat_enabled ? (
           <ChatPanel />
         ) : (
           <p className="text-gray-500">
-            Chat needs OPENAI_API_KEY (or a configured model) on the backend.
+            Chat is disabled: set LLM_API_KEY (or OPENAI_API_KEY) in the backend&apos;s .env and
+            restart it.
           </p>
         )}
       </section>

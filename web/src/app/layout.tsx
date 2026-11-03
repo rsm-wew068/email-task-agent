@@ -37,6 +37,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </span>
             )}
           </nav>
+          {/* Decided on the server, where meta is actually known — production
+              error boundaries only see redacted messages (review finding 9). */}
+          {!meta && (
+            <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+              The FastAPI backend is not responding. Start it with{" "}
+              <code>uv run uvicorn email_task_agent.app.main:app_factory --reload</code> and check
+              BACKEND_URL.
+            </div>
+          )}
           {children}
         </div>
       </body>

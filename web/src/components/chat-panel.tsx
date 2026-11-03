@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useFormStatus } from "react-dom";
 import {
   approveChatSession,
   createChatSession,
@@ -18,9 +17,10 @@ const SESSION_KEY = "chat_session";
 // version it rendered, so a double click or a second tab comes back stale.
 
 function SendControls({ disabled }: { disabled: boolean }) {
-  const { pending } = useFormStatus();
+  // An onSubmit form doesn't drive useFormStatus; the transition's pending
+  // flag (passed in) does the actual disabling.
   return (
-    <button type="submit" className={btn("primary")} disabled={disabled || pending} data-testid="chat-send">
+    <button type="submit" className={btn("primary")} disabled={disabled} data-testid="chat-send">
       Send
     </button>
   );
@@ -28,19 +28,24 @@ function SendControls({ disabled }: { disabled: boolean }) {
 
 export default function ChatPanel() {
   const [session, setSession] = useState<ChatSessionView | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [text, setText] = useState("");
   // React 19: isPending stays true until the async transition callback resolves.
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     startTransition(async () => {
-      const stored = Number(window.localStorage.getItem(SESSION_KEY));
-      let view = stored ? await getChatSession(stored) : null;
-      if (!view) {
-        view = await createChatSession();
+      try {
+        const stored = Number(window.localStorage.getItem(SESSION_KEY));
+        let view = stored ? await getChatSession(stored) : null;
+        if (!view) {
+          view = await createChatSession();
+        }
+        window.localStorage.setItem(SESSION_KEY, String(view.session_id));
+        setSession(view);
+      } catch {
+        setLoadError(true); // "unavailable" only for a recorded load failure
       }
-      window.localStorage.setItem(SESSION_KEY, String(view.session_id));
-      setSession(view);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -56,10 +61,11 @@ export default function ChatPanel() {
     const current = session;
     if (!current) return;
     const body = text;
-    setText("");
     submit(async () => {
       try {
-        return await sendChatMessage(current.session_id, body);
+        const view = await sendChatMessage(current.session_id, body);
+        setText(""); // clear only after success, so a failed send keeps the draft
+        return view;
       } catch {
         return { ...current, error: "Could not send — is the backend up?" };
       }
@@ -86,7 +92,11 @@ export default function ChatPanel() {
   if (!session) {
     return (
       <div data-testid="chat-panel" className="flex flex-col gap-2">
-        <p className="text-gray-500">{pending ? "Connecting…" : "Chat unavailable."}</p>
+        {loadError ? (
+          <p className="text-gray-500">Chat unavailable — the backend is not responding.</p>
+        ) : (
+          <p className="text-gray-500">Connecting…</p>
+        )}
       </div>
     );
   }

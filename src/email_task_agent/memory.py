@@ -5,7 +5,7 @@ production: nothing persists across processes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 
 from email_task_agent.pipeline.reconcile import (
@@ -86,6 +86,7 @@ class MemoryStore:
         self.actions: dict[int, _Action] = {}
         self.sync_history_id: str | None = None
         self.sync_full_at: datetime | None = None
+        self.chat_turns: dict[date, int] = {}
         self._next = {"person": 1, "task": 1, "thread": 1, "event": 1, "suggestion": 1, "session": 1, "action": 1}
 
     def _id(self, kind: str) -> int:
@@ -268,6 +269,13 @@ class MemoryStore:
             task.due_date = new_due
         return True
 
+    def chat_turns_today(self):
+        return self.chat_turns.get(date.today(), 0)
+
+    def record_chat_turn(self):
+        today = date.today()
+        self.chat_turns[today] = self.chat_turns.get(today, 0) + 1
+
     # -- chat -----------------------------------------------------------------------
     def chat_create(self) -> int:
         session_id = self._id("session")
@@ -275,7 +283,12 @@ class MemoryStore:
         return session_id
 
     def chat_get(self, session_id):
-        return self.sessions.get(session_id)
+        session = self.sessions.get(session_id)
+        if session is None:
+            return None
+        # A copy: the store must not alias rows that callers treat as snapshots
+        # (PostgresStore returns fresh DB rows, never live objects).
+        return replace(session)
 
     def chat_cas(self, session_id, expected_version, *, messages, pending_approvals, state):
         session = self.sessions.get(session_id)

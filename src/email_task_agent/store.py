@@ -124,6 +124,10 @@ class Store(Protocol):
 
     def update_task_fields(self, task_id: int, *, title: str | None = None, due_date: date | None = None, clear_due: bool = False) -> bool: ...
 
+    def chat_turns_today(self) -> int:
+        """LLM chat turns recorded today (demo spend cap, review finding 2)."""
+    def record_chat_turn(self) -> None: ...
+
     # -- chat (§8.2 state machine) -------------------------------------------------
     def chat_create(self) -> int: ...
     def chat_get(self, session_id: int) -> ChatSessionRow | None: ...
@@ -737,6 +741,22 @@ def action_record_db(conn: psycopg.Connection, kind: str, args: dict, tool_call_
         return cur.fetchone()[0], False
 
 
+def chat_turns_today_db(conn: psycopg.Connection) -> int:
+    with conn.cursor() as cur:
+        cur.execute("select chat_turns from usage_counters where day = current_date")
+        row = cur.fetchone()
+        return row[0] if row else 0
+
+
+def record_chat_turn_db(conn: psycopg.Connection) -> None:
+    conn.execute(
+        """
+        insert into usage_counters (day, chat_turns) values (current_date, 1)
+        on conflict (day) do update set chat_turns = usage_counters.chat_turns + 1
+        """
+    )
+
+
 def action_mark_sent_db(conn: psycopg.Connection, action_id: int) -> None:
     conn.execute(
         "update actions set status = 'approved', updated_at = now() where id = %s and status = 'proposed'",
@@ -910,6 +930,12 @@ class PostgresStore:
             return True
 
         return self._run(fn)
+
+    def chat_turns_today(self):
+        return self._run(chat_turns_today_db)
+
+    def record_chat_turn(self):
+        return self._run(record_chat_turn_db)
 
 
 @dataclass

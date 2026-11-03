@@ -13,9 +13,8 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-
-from email_task_agent.app.main import Deps, create_app
+from email_task_agent.app.deps import Deps
+from email_task_agent.app.main import create_app
 from email_task_agent.memory import MemoryStore
 
 OUT = Path(__file__).resolve().parents[1] / "web" / "openapi.json"

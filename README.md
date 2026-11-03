@@ -70,9 +70,13 @@ The public demo is **one HF Space running both servers in a single container**: 
 on `127.0.0.1:8000`, Next.js on `0.0.0.0:7860` (`deploy/hf-space.Dockerfile`, Docker SDK,
 `app_port: 7860`; `/healthz` and `/api/*` are proxied through Next.js to the backend).
 
-- Space secrets/variables: `OR_API_KEY` (chat model), `INSTANCE_MODE=demo`.
-- Demo storage is in-memory by design (D8: synthetic data only) — a Space restart
-  reseeds it, and chat is capped at `DEMO_DAILY_TURN_CAP` (100) turns/day.
+- Space secrets/variables: `OR_API_KEY` (chat model), `INSTANCE_MODE=demo`, and
+  `DATABASE_URL` — the **session pooler** form of a Supabase project that holds ONLY
+  synthetic data (D8). The direct `db.<ref>.supabase.co` host is IPv6-only and
+  unreachable from Spaces; the pooler (`aws-0-<region>.pooler.supabase.com`) works.
+- That database is shared with the private instance on purpose (it is all synthetic) —
+  never point a public demo at a database containing real mail. Chat is capped at
+  `DEMO_DAILY_TURN_CAP` (100) turns/day across all visitors.
 - Rebuild locally first (`docker build -f deploy/hf-space.Dockerfile .`) — the image is
   self-contained and starts both processes; then upload the staging tree with
   `huggingface_hub.upload_folder`.

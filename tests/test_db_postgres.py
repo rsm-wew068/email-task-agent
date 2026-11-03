@@ -253,3 +253,38 @@ def test_calendar_and_person_upsert(store):
     in_range = store.tasks_due_between(date(2026, 11, 1), date(2026, 11, 30))
     assert len(in_range) == 1 and in_range[0].owner_email == "alex@x"
     assert store.tasks_due_between(date(2026, 12, 1), date(2026, 12, 31)) == []
+
+
+# -- startup connection retries (no database needed; pure unit) -------------------------
+
+
+def test_connect_retries_ride_out_transient_failures(monkeypatch):
+    """Supavisor blips (tenant lookup ENOTFOUND for a few seconds) must not
+    crash the container boot: retry with backoff until connect succeeds."""
+    from email_task_agent import db
+
+    calls = []
+
+    def flaky_connect():
+        calls.append(1)
+        if len(calls) < 3:
+            raise psycopg.OperationalError("tenant/user not found")
+        return "sentinel-connection"
+
+    monkeypatch.setattr(db, "connect", flaky_connect)
+    sleeps: list[float] = []
+    conn = db.connect_with_retries(attempts=5, base_delay=2.0, _sleep=sleeps.append)
+    assert conn == "sentinel-connection"
+    assert len(calls) == 3
+    assert sleeps == [2.0, 4.0]  # exponential backoff between attempts
+
+
+def test_connect_retries_exhaustion_raises_last_error(monkeypatch):
+    from email_task_agent import db
+
+    def always_failing_connect():
+        raise psycopg.OperationalError("pooler down")
+
+    monkeypatch.setattr(db, "connect", always_failing_connect)
+    with pytest.raises(psycopg.OperationalError, match="pooler down"):
+        db.connect_with_retries(attempts=3, base_delay=0.0, _sleep=lambda _s: None)

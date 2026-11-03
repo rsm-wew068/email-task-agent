@@ -46,10 +46,10 @@ def build_default_app() -> FastAPI:
     owner_email = "alex@fernwoodlabs.com"
 
     if settings().database_url:
-        from email_task_agent.db import connect, migrate
+        from email_task_agent.db import connect, connect_with_retries, migrate
         from email_task_agent.store import PostgresStore
 
-        conn = connect()
+        conn = connect_with_retries()
         migrate(conn)
         store = PostgresStore(lambda: connect())
     else:

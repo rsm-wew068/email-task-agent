@@ -163,7 +163,7 @@ it or asked someone for it.
 
 - [x] **M0**: schema, evidence module, E1 scorer + gate + runner, label-first suites.
 - [x] **M1**: approval flow (§8.2) with Playwright proofs, Gmail sync, extraction,
-      reconciliation, task/calendar/chat UI, E2 + E1-U harnesses, CI, Dockerfile.
+      reconciliation, task/calendar/chat UI, E2 + E1-U harnesses, CI, container image.
 - [x] **Frontend migration**: Jinja/HTMX → Next.js 16 (JSON API + typed client + server
       actions; HTML routes, templates and jinja2 removed after e2e went green).
 - [x] **Deploy**: public demo live on Hugging Face Spaces as one all-in-one container

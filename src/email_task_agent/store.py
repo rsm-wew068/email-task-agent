@@ -336,7 +336,7 @@ def apply_update(conn: psycopg.Connection, upd: ApplyUpdate) -> bool:
             """
             select t.title, p.email, t.due_date, t.status
             from tasks t left join people p on p.id = t.owner_person_id
-            where t.id = %s for update
+            where t.id = %s for update of t
             """,
             (upd.task_id,),
         )
@@ -399,7 +399,7 @@ def merge_task_rows(conn: psycopg.Connection, ops: MergeOps) -> bool:
             """
             select t.title, p.email, t.due_date, t.status
             from tasks t left join people p on p.id = t.owner_person_id
-            where t.id = %s for update
+            where t.id = %s for update of t
             """,
             (ops.secondary_id,),
         )
@@ -802,7 +802,7 @@ class PostgresStore:
         return self._run(chat_create_db)
 
     def chat_get(self, session_id: int) -> ChatSessionRow | None:
-        return self._run(chat_get_db)
+        return self._run(lambda c: chat_get_db(c, session_id))
 
     def chat_cas(self, session_id, expected_version, *, messages, pending_approvals, state):
         return self._run(
@@ -849,7 +849,7 @@ class PostgresStore:
         return self._run(lambda c: reject_suggestion_db(c, suggestion_id))
 
     def split_merge(self, task_id: int):
-        return self._run(split_merge_db)
+        return self._run(lambda c: split_merge_db(c, task_id))
 
     # -- sync helpers ---------------------------------------------------------------
     def upsert_person(self, email, display_name=None):

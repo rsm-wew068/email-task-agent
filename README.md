@@ -88,9 +88,14 @@ LLM_API_KEY=<your Z.ai key>            # falls back to OPENAI_API_KEY if you pre
 # LLM_BASE_URL=https://api.z.ai/api/paas/v4/   # the default; any OpenAI-compatible endpoint works
 # CHAT_MODEL=glm-5.3-flash                     # defaults shown; override for the D3 bake-off
 # EXTRACTION_MODEL=glm-5.3-flash
-DATABASE_URL=postgresql://...                  # optional; without it you get the in-memory demo
+DATABASE_URL=postgresql://...                  # any managed Postgres; without it: in-memory demo
 INSTANCE_MODE=private                          # only meaningful with DATABASE_URL
 ```
+
+**DATABASE_URL works with Neon, Supabase, Render, or Railway** — plain SQL, standard
+Postgres features, pooling-safe connections. Exact strings (plus examples) are in
+`.env.example`; e.g. Supabase: Project → Connect → *Session pooler*, and append
+`?sslmode=require`. Migrations apply automatically when the backend starts.
 
 Restart the backend after editing `.env`; the chat page then works against GLM.
 

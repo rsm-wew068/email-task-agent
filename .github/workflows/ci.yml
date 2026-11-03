@@ -9,6 +9,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: check
+          POSTGRES_DB: eta
+        ports:
+          - 5455:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -46,8 +61,10 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
-      - name: Tests (unit + API + Next.js e2e)
+      - name: Tests (unit + API + PostgresStore + Next.js e2e)
         run: uv run pytest
+        env:
+          POSTGRES_TEST_URL: postgresql://postgres:check@127.0.0.1:5455/eta
 
       - name: E1 smoke eval (null extractor, harness sanity)
         run: uv run python -m email_task_agent.evals.e1

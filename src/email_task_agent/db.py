@@ -20,7 +20,10 @@ def connect() -> psycopg.Connection:
     url = settings().database_url
     if not url:
         raise RuntimeError("DATABASE_URL is not set; see .env.example")
-    return psycopg.connect(url, autocommit=False)
+    # prepare_threshold=None disables automatic prepared statements, which
+    # transaction-mode poolers (Supabase's port-6543 pooler, some proxies)
+    # reject. Any managed Postgres — Neon, Supabase, Render, Railway — works.
+    return psycopg.connect(url, autocommit=False, prepare_threshold=None)
 
 
 def migrate(conn: psycopg.Connection) -> list[str]:

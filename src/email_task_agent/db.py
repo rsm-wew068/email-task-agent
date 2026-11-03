@@ -13,7 +13,11 @@ import psycopg
 
 from email_task_agent.config import settings
 
-MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "migrations"
+# Repo checkout: <root>/migrations. When installed as a wheel (the Docker Space)
+# the module lives under site-packages, so fall back to the working directory's
+# copy — else migrate() silently applies zero files and seeding fails.
+_MIGRATIONS_CANDIDATES = [Path(__file__).resolve().parents[2] / "migrations", Path.cwd() / "migrations"]
+MIGRATIONS_DIR = next((p for p in _MIGRATIONS_CANDIDATES if p.is_dir()), _MIGRATIONS_CANDIDATES[0])
 
 
 def connect() -> psycopg.Connection:

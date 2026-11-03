@@ -11,8 +11,9 @@ COPY web/ ./
 RUN npm run build
 
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-# node's binary (copied from the node image) links against libatomic
-RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+# node's binary (copied from the node image) links against libatomic; postgres
+# powers the embedded demo database (deploy/space-entrypoint.sh)
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 postgresql \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=web /usr/local /usr/local
 WORKDIR /app
@@ -29,6 +30,7 @@ ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
 COPY --from=web /web/.next /web/.next
 COPY --from=web /web/node_modules /web/node_modules
 COPY --from=web /web/package.json /web/next.config.ts /web/
+COPY deploy/space-entrypoint.sh /app/space-entrypoint.sh
 WORKDIR /web
 EXPOSE 7860
-CMD ["sh", "-c", "(cd /app && uvicorn email_task_agent.app.main:app_factory --factory --host 127.0.0.1 --port 8000 &) && until python3 -c \"import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz', timeout=2)\" 2>/dev/null; do sleep 1; done && exec /web/node_modules/.bin/next start -H 0.0.0.0 -p 7860"]
+CMD ["sh", "/app/space-entrypoint.sh"]

@@ -66,26 +66,25 @@ deploy/                Dockerfiles for the deployed instances
 
 ## Deployment (Hugging Face Space)
 
-The public demo is **one HF Space running both servers in a single container**: FastAPI
-on `127.0.0.1:8000`, Next.js on `0.0.0.0:7860` (`deploy/hf-space.Dockerfile`, Docker SDK,
-`app_port: 7860`; `/healthz` and `/api/*` are proxied through Next.js to the backend).
+The public demo is **one HF Space running everything in a single container**: an
+embedded Postgres (initialized by `deploy/space-entrypoint.sh`), FastAPI on
+`127.0.0.1:8000`, and Next.js on `0.0.0.0:7860` (`deploy/hf-space.Dockerfile`, Docker
+SDK, `app_port: 7860`; `/healthz` and `/api/*` are proxied through Next.js to the
+backend).
 
-- Space secrets/variables: `OR_API_KEY` (chat model), `INSTANCE_MODE=demo`, and
-  `DATABASE_URL` — the **session pooler** form of a Supabase project that holds ONLY
-  synthetic data (D8). Three Supabase facts matter on Spaces: the direct
-  `db.<ref>.supabase.co` host is IPv6-only (Spaces have IPv4 egress only); the pooler
-  hostname is **`aws-0-<region>` for older projects vs `aws-1-<region>` for newer ones**
-  (wrong pool gives `tenant/user not found` — copy the exact string from your project's
-  Connect dialog, [Supabase docs](https://supabase.com/docs/guides/database/connecting-to-postgres));
-  and the shared pooler transiently deregisters tenants on free-tier pause/wake, so
-  **boot never blocks on the database** — migrate+seed run in a retrying background
-  thread and pages render the offline banner until it lands, then self-heal.
-- That database is shared with the private instance on purpose (it is all synthetic) —
-  never point a public demo at a database containing real mail. Chat is capped at
-  `DEMO_DAILY_TURN_CAP` (100) turns/day across all visitors.
+- Space secrets/variables: `HF_TOKEN` (chat primary), `OR_API_KEY` (chat failover),
+  `INSTANCE_MODE=demo`. **No external database**: the demo holds its synthetic data
+  (D8) in the embedded Postgres, so there is no pooler to deregister and nothing to
+  pause or wake — a container restart just reseeds it. Boot never blocks on the
+  database either: migrate+seed run in a retrying background thread (pages render the
+  offline banner until they land, then self-heal).
+- Chat is capped at `DEMO_DAILY_TURN_CAP` (100) turns/day across all visitors; writes
+  stay stubbed in demo mode.
 - Rebuild locally first (`docker build -f deploy/hf-space.Dockerfile .`) — the image is
-  self-contained and starts both processes; then upload the staging tree with
-  `huggingface_hub.upload_folder`.
+  self-contained and starts all three processes; then upload the staging tree with
+  `huggingface_hub.upload_folder`. A private instance is the same image pointed at a
+  managed Postgres (`DATABASE_URL`) plus the Gmail token (`GMAIL_TOKEN_JSON`) — see
+  `.env.example` for the pooler caveats.
 
 Local two-process development: backend `:8000`, frontend `:3000` (Quickstart). Without
 env vars the backend still starts the keyless in-memory demo. A private instance is the
@@ -181,7 +180,7 @@ it or asked someone for it.
 - [x] **Frontend migration**: Jinja/HTMX → Next.js 16 (JSON API + typed client + server
       actions; HTML routes, templates and jinja2 removed after e2e went green).
 - [x] **Deploy**: public demo live on Hugging Face Spaces as one all-in-one container
-      (frontend + backend; real-model chat, capped; in-memory synthetic store).
+      (embedded Postgres + backend + frontend; real-model chat with failover, capped).
 - [ ] **M2**: grow E1 to 40 threads (~100 gold with the private golden set), real-model
       baseline + D3 bake-off, E3/E4 agent evals, Gmail/Calendar/Tasks end-to-end on the
       private instance.

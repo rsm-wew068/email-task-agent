@@ -74,9 +74,9 @@ uv run uvicorn email_task_agent.app.main:app_factory --reload
 npm --prefix web run dev         # BACKEND_URL defaults to http://127.0.0.1:8000
 ```
 
-Open http://127.0.0.1:3000. With an LLM key set, the chat runs on **GLM-5.3-Flash via
-Z.ai** by default (demo writes stay stubbed; the demo chat is capped at 100 turns/day —
-plan §11). Private instance: set `DATABASE_URL` (Neon), run `python scripts/auth_gmail.py`,
+Open http://127.0.0.1:3000. With an LLM key set, the chat runs live — first key in
+`.env` wins: `GEMINI_API_KEY` → **gemini-3.8-flash**, `ZAI_API_KEY` → **GLM-5.3-Flash**
+(demo writes stay stubbed; the demo chat is capped at 100 turns/day — plan §11). Private instance: set `DATABASE_URL` (Neon), run `python scripts/auth_gmail.py`,
 press *Sync now*.
 
 ### Where to put the API key
@@ -84,7 +84,7 @@ press *Sync now*.
 Everything lives in **`.env` at the repo root** (gitignored — copy from `.env.example`):
 
 ```bash
-ZAI_API_KEY=<your Z.ai key>            # LLM_API_KEY / OPENAI_API_KEY also accepted
+GEMINI_API_KEY=<your Google AI Studio key>   # or ZAI_API_KEY for GLM-5.3-Flash
 # LLM_BASE_URL=https://api.z.ai/api/paas/v4/   # the default; any OpenAI-compatible endpoint works
 # CHAT_MODEL=glm-5.3-flash                     # defaults shown; override for the D3 bake-off
 # EXTRACTION_MODEL=glm-5.3-flash

@@ -166,7 +166,7 @@ def _chat_session_view(session) -> ChatSessionView:
                 messages.append(ChatMessageView(role="assistant", text=str(part.get("content"))))
             elif part_kind == "tool-call":
                 args = part.get("args")
-                args_text = args if isinstance(args, str) else json.dumps(args)
+                args_text = args if isinstance(args, str) else json.dumps(args, ensure_ascii=False)
                 messages.append(
                     ChatMessageView(role="tool_call", text=f"{part.get('tool_name')}({args_text})")
                 )

@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { btn } from "@/lib/ui";
+import { btn, type ButtonKind } from "@/lib/ui";
 
 export default function SubmitButton({
   children,
@@ -9,7 +9,7 @@ export default function SubmitButton({
   testid,
 }: {
   children: React.ReactNode;
-  kind?: "default" | "primary" | "approve" | "deny";
+  kind?: ButtonKind;
   testid?: string;
 }) {
   const { pending } = useFormStatus();

@@ -1,4 +1,5 @@
 import ChatPanel from "@/components/chat-panel";
+import { Icon } from "@/components/icons";
 import { backend, unwrapOrNull } from "@/lib/backend";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function ChatPage() {
           <ChatPanel />
         ) : (
           <p className="text-gray-500">
-            Chat is disabled: set ZAI_API_KEY (or OPENAI_API_KEY) in the backend&apos;s .env and
+            Chat is disabled: set GEMINI_API_KEY (or ZAI_API_KEY / OPENAI_API_KEY) in the backend&apos;s .env and
             restart it.
           </p>
         )}

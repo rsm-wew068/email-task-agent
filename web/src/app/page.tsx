@@ -1,8 +1,11 @@
+import { todayIso } from "@/lib/calendar";
 import ReviewQueue from "@/components/review-queue";
 import ReextractButton from "@/components/reextract-button";
 import SubmitButton from "@/components/submit-button";
 import SyncControls from "@/components/sync-controls";
 import TaskTable from "@/components/task-table";
+import { Icon } from "@/components/icons";
+import { formatWhen } from "@/lib/calendar";
 import { backend, unwrap } from "@/lib/backend";
 import type { TaskBoardView } from "@/lib/types";
 
@@ -22,74 +25,107 @@ export default async function TasksPage({
     unwrap(backend.GET("/api/tasks", { params: { query } })),
     unwrap(backend.GET("/api/meta", {})),
   ]);
+  const today = todayIso(process.env.APP_TIME_ZONE ?? "UTC");
 
   return (
-    <main>
-      <section className="mb-6">
-        <form method="get" action="/" className="mr-3 inline-flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {board.tasks.length} {board.tasks.length === 1 ? "task" : "tasks"}
+            {q ? ` matching “${q}”` : ""} · synced from your mailbox
+          </p>
+        </div>
+        <SyncControls enabled={meta.sync_enabled} />
+      </header>
+
+      <form method="get" action="/" className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Icon
+            name="search"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="search"
             name="q"
             defaultValue={q ?? ""}
-            placeholder="search tasks…"
-            className="rounded border border-gray-300 px-2 py-1.5"
+            placeholder="Search tasks…"
+            className="w-64 rounded-lg border border-gray-300 bg-white py-1.5 pl-8 pr-3 text-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
           />
-          <select name="status" defaultValue={status ?? ""} className="rounded border border-gray-300 px-2 py-1.5">
-            <option value="">any status</option>
-            <option value="open">open</option>
-            <option value="done">done</option>
-            <option value="cancelled">cancelled</option>
-          </select>
-          <SubmitButton>Filter</SubmitButton>
-        </form>
-        <SyncControls enabled={meta.sync_enabled} />
-      </section>
+        </div>
+        <select
+          name="status"
+          defaultValue={status ?? ""}
+          className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+        >
+          <option value="">Any status</option>
+          <option value="open">Open</option>
+          <option value="done">Done</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <SubmitButton>Apply</SubmitButton>
+      </form>
 
-      <section className="my-6" data-testid="review-queue-section">
-        <h2 className="mb-2 font-semibold">Review queue</h2>
+      <section className="flex flex-col gap-3" data-testid="review-queue-section">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-400">
+          Review queue
+          {board.suggestions.length > 0 && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+              {board.suggestions.length}
+            </span>
+          )}
+        </h2>
         <ReviewQueue suggestions={board.suggestions} />
       </section>
 
-      <section className="my-6">
-        <h2 className="mb-2 font-semibold">
-          Tasks {q ? `matching “${q}”` : ""} ({board.tasks.length})
+      <section className="flex flex-col gap-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-400">
+          <Icon name="inbox" className="h-4 w-4" />
+          All tasks
         </h2>
-        <TaskTable tasks={board.tasks} />
+        <TaskTable tasks={board.tasks} today={today} />
       </section>
 
-      <section className="my-6">
-        <h2 className="mb-2 font-semibold">Threads</h2>
-        <table className="w-full border-collapse bg-white text-left text-sm">
-          <thead>
-            <tr className="border-b text-xs uppercase tracking-wide text-gray-500">
-              <th className="px-2 py-2">Subject</th>
-              <th className="px-2 py-2">Participants</th>
-              <th className="px-2 py-2">Last message</th>
-              <th className="px-2 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {board.threads.map((t) => (
-              <tr key={t.id} className="border-b border-gray-200">
-                <td className="px-2 py-2">{t.subject ?? "(no subject)"}</td>
-                <td className="px-2 py-2 text-gray-500">{t.participants.join(", ")}</td>
-                <td className="px-2 py-2 text-gray-500">{t.last_message_at ?? "—"}</td>
-                <td className="px-2 py-2">
-                  {/* Re-extract needs the Gmail pipeline: only offer it where sync works. */}
-                  {meta.sync_enabled && <ReextractButton gmailThreadId={t.gmail_thread_id} />}
-                </td>
+      <section className="flex flex-col gap-3 pb-8">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-400">
+          <Icon name="mail" className="h-4 w-4" />
+          Threads
+        </h2>
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/60 text-xs font-medium uppercase tracking-wider text-gray-400">
+                <th className="px-4 py-2.5">Subject</th>
+                <th className="px-4 py-2.5">Participants</th>
+                <th className="px-4 py-2.5">Last message</th>
+                <th className="px-4 py-2.5" />
               </tr>
-            ))}
-            {board.threads.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-2 py-2 text-gray-500">
-                  No threads loaded.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {board.threads.map((t) => (
+                <tr key={t.id} className="transition-colors hover:bg-indigo-50/40">
+                  <td className="px-4 py-2.5 font-medium text-gray-800">{t.subject ?? "(no subject)"}</td>
+                  <td className="px-4 py-2.5 text-gray-500">{t.participants.join(", ")}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-gray-400">{
+                    t.last_message_at ? formatWhen(t.last_message_at) : "—"
+                  }</td>
+                  <td className="px-4 py-2.5 text-right">
+                    {meta.sync_enabled && <ReextractButton gmailThreadId={t.gmail_thread_id} />}
+                  </td>
+                </tr>
+              ))}
+              {board.threads.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                    No threads loaded yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
-    </main>
+    </div>
   );
 }

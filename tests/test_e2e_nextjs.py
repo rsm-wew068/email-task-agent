@@ -303,7 +303,7 @@ def test_crash_after_api_call_retry_never_sends_twice(page):
     send_and_wait(page)
 
     page.click("[data-testid=approve-submit]")
-    page.wait_for_selector("text=The previous attempt failed")
+    page.wait_for_selector("text=previous attempt failed")
     assert gmail.calls == 1
 
     page.click("[data-testid=approve-submit]")
@@ -318,7 +318,7 @@ def test_tasks_page_mark_done_via_server_action(page):
     task = store.list_tasks()[0]
     page.wait_for_selector(f"[data-testid=task-toggle-{task.id}]")
     page.click(f"[data-testid=task-toggle-{task.id}]")
-    page.wait_for_selector(f"[data-testid=task-{task.id}] >> text=Mark open")  # button flips
+    page.wait_for_selector(f"[data-testid=task-{task.id}] >> text=Reopen")  # button flips
     assert store.list_tasks(status="done")
 
 

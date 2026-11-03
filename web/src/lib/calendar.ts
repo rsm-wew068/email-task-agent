@@ -72,3 +72,16 @@ export function todayIso(timeZone: string): string {
 export function currentMonth(timeZone: string): string {
   return todayIso(timeZone).slice(0, 7);
 }
+
+/** "Nov 5, 14:30" for a thread's last-message ISO timestamp. */
+export function formatWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}

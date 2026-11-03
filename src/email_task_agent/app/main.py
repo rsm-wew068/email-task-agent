@@ -68,24 +68,24 @@ def build_default_app() -> FastAPI:
 
     if settings().api_key:
         from email_task_agent.chat.service import ChatService
-        from email_task_agent.llm import build_model
+        from email_task_agent.llm import model_for_purpose
 
         # Demo spend control (plan §11: 100 turns/day); unlimited when private.
         cap = settings().demo_daily_turn_cap if mode == "demo" else None
         chat_service = ChatService(
             store,
-            build_model(settings().chat_model),
+            model_for_purpose("chat"),
             mode=mode,
             me=owner_email,
             daily_turn_cap=cap,
         )
 
     if mode == "private" and settings().api_key:
-        from email_task_agent.llm import build_model
+        from email_task_agent.llm import model_for_purpose
         from email_task_agent.pipeline.extract import ExtractionAgent
         from email_task_agent.pipeline.sync import SyncService
 
-        extraction = ExtractionAgent(build_model(settings().extraction_model))
+        extraction = ExtractionAgent(model_for_purpose("extraction"))
 
         def make_service() -> SyncService:
             from email_task_agent.gmail.client import GmailClient, build_gmail

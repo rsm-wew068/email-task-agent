@@ -141,7 +141,7 @@ Restart the backend after editing `.env`; the chat page then runs on the live mo
 ## Checks
 
 ```bash
-uv run pytest                                       # 127 tests incl. 9 Next.js e2e
+uv run pytest                                       # 132 tests incl. 9 Next.js e2e
 uv run ruff check .
 npm --prefix web run typecheck                      # tsc --noEmit
 npm --prefix web run build                          # production build (e2e needs it)

@@ -172,7 +172,7 @@ class ChatService:
         they are our bug and a second provider would only mask them."""
         try:
             return self.agent.run_sync(**kwargs)
-        except Exception as error:  # noqa: BLE001 - re-raised unless the fallback serves
+        except Exception as error:  # re-raised unless the fallback serves
             if self.fallback_model is None or not provider_failure(error):
                 raise
             return self.agent.run_sync(**kwargs, model=self.fallback_model)

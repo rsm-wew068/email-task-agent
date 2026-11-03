@@ -101,9 +101,12 @@ uv run uvicorn email_task_agent.app.main:app_factory --factory --reload
 npm --prefix web run dev         # BACKEND_URL defaults to http://127.0.0.1:8000
 ```
 
-Open http://127.0.0.1:3000. With an LLM key set, the chat runs live — first key in
-`.env` wins: `OR_API_KEY` → **deepseek/deepseek-v4.1-flash-1017** (OpenRouter),
-`GEMINI_API_KEY` → **gemini-3.8-flash**, `ZAI_API_KEY` → **GLM-5.3-Flash**
+Open http://127.0.0.1:3000. With an LLM key set, the chat runs live:
+`HF_TOKEN` → **deepseek-ai/DeepSeek-V4.1-Flash-1017** via the HF Inference Providers
+router (primary), and `OR_API_KEY` → **deepseek/deepseek-v4.1-flash-1017** (OpenRouter)
+as **runtime failover** — a provider-level failure on HF (throttled, out of credits,
+down) retries that same request on OpenRouter automatically. Tool errors and malformed
+requests are never retried on the fallback (they are our bug, not the provider's).
 (demo writes stay stubbed; the demo chat is capped at 100 turns/day — plan §11).
 Private instance: set `DATABASE_URL`, run `python scripts/auth_gmail.py`, press *Sync now*.
 
@@ -112,7 +115,8 @@ Private instance: set `DATABASE_URL`, run `python scripts/auth_gmail.py`, press 
 Everything lives in **`.env` at the repo root** (gitignored — copy from `.env.example`):
 
 ```bash
-OR_API_KEY=<your OpenRouter key>              # or GEMINI_API_KEY / ZAI_API_KEY
+HF_TOKEN=<your HF access token>               # primary: HF Inference Providers
+OR_API_KEY=<your OpenRouter key>              # failover: used when HF throttles/runs out
 # LLM_BASE_URL=...                            # override endpoint; any OpenAI-compatible host works
 # CHAT_MODEL=...                              # defaults shown; override for the D3 bake-off
 # EXTRACTION_MODEL=...

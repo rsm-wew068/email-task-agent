@@ -11,13 +11,11 @@ class Settings(BaseSettings):
     database_url: str | None = None
     instance_mode: str = "private"  # private | demo (D8: demo never holds real mail)
 
-    # LLM provider keys — the first present one selects the provider (plan D3;
-    # bake-off can override with LLM_BASE_URL / CHAT_MODEL / EXTRACTION_MODEL).
-    or_api_key: str | None = None  # OpenRouter (e.g. deepseek/deepseek-v4.1-flash-1017)
-    gemini_api_key: str | None = None  # Google AI Studio; OpenAI-compatible endpoint
-    zai_api_key: str | None = None  # Z.ai (GLM)
-    llm_api_key: str | None = None  # generic alias, pairs with LLM_BASE_URL
-    openai_api_key: str | None = None  # OpenAI (requires explicit LLM_BASE_URL + CHAT_MODEL)
+    # LLM providers: HF Inference Providers primary, OpenRouter failover — a
+    # provider-level error (throttled, out of credits, down) on the primary
+    # retries the same request on the fallback. Bake-off overrides below still win.
+    hf_token: str | None = None  # HF Inference Providers router (settings access token)
+    or_api_key: str | None = None  # OpenRouter, deepseek/deepseek-v4.1-flash-1017
 
     llm_base_url: str | None = None  # explicit OpenAI-compatible endpoint override
     chat_model: str | None = None  # explicit model override
@@ -28,7 +26,7 @@ class Settings(BaseSettings):
 
     @property
     def api_key(self) -> str | None:
-        return self.or_api_key or self.gemini_api_key or self.llm_api_key or self.zai_api_key or self.openai_api_key
+        return self.hf_token or self.or_api_key
 
 
 @lru_cache

@@ -69,7 +69,7 @@ def build_default_app() -> FastAPI:
     from email_task_agent.chat.service import ChatService
 
     if settings().api_key:
-        from email_task_agent.llm import model_for_purpose
+        from email_task_agent.llm import model_for_purpose, openrouter_fallback
 
         # Demo spend control (plan §11: 100 turns/day); unlimited when private.
         cap = settings().demo_daily_turn_cap if mode == "demo" else None
@@ -79,6 +79,7 @@ def build_default_app() -> FastAPI:
             mode=mode,
             me=owner_email,
             daily_turn_cap=cap,
+            fallback_model=openrouter_fallback(),
         )
     elif mode == "demo":
         # Keyless demo: a SCRIPTED MOCK LLM (clearly labeled — the case-study

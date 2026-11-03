@@ -20,6 +20,7 @@ from pydantic_ai.models import Model
 from pydantic_ai.tools import DeferredToolRequests, ToolDenied
 
 from email_task_agent.agent.chat import ChatDeps, build_chat_agent
+from email_task_agent.llm import provider_failure
 from email_task_agent.store import Store, deserialize_messages, pending_to_dict, serialize_messages
 
 
@@ -49,6 +50,7 @@ class ChatService:
         gmail=None,
         agent: Agent[ChatDeps, str] | None = None,
         daily_turn_cap: int | None = None,
+        fallback_model: Model | None = None,
     ):
         self.store = store
         self.mode = mode
@@ -57,6 +59,9 @@ class ChatService:
         self.agent = agent or build_chat_agent(model)
         # Demo spend control (plan §11): None disables the cap (private instance).
         self.daily_turn_cap = daily_turn_cap
+        # Runtime failover: provider-level errors on the primary (HF throttled /
+        # out of credits / down) retry this same request on the fallback model.
+        self.fallback_model = fallback_model
 
     def create_session(self) -> int:
         return self.store.chat_create()
@@ -86,7 +91,7 @@ class ChatService:
         self.store.record_chat_turn()
         deps = self._deps()
         try:
-            result = self.agent.run_sync(
+            result = self._run_sync(
                 user_prompt=user_text,
                 message_history=deserialize_messages(session.messages) or None,
                 deps=deps,
@@ -142,7 +147,7 @@ class ChatService:
 
         deps = self._deps()
         try:
-            result = self.agent.run_sync(
+            result = self._run_sync(
                 message_history=deserialize_messages(session.messages),
                 deferred_tool_results=results,
                 deps=deps,
@@ -159,6 +164,18 @@ class ChatService:
         return self._persist_output(session, result, claimed_version=claimed)
 
     # -- internals ----------------------------------------------------------------------
+
+    def _run_sync(self, **kwargs):
+        """agent.run_sync; on a provider-level failure of the primary model
+        (throttled / out of credits / down), retry once on the fallback model.
+        Programming errors and malformed requests (400) are never retried —
+        they are our bug and a second provider would only mask them."""
+        try:
+            return self.agent.run_sync(**kwargs)
+        except Exception as error:  # noqa: BLE001 - re-raised unless the fallback serves
+            if self.fallback_model is None or not provider_failure(error):
+                raise
+            return self.agent.run_sync(**kwargs, model=self.fallback_model)
 
     def _deps(self) -> ChatDeps:
         return ChatDeps(store=self.store, mode=self.mode, me=self.me, gmail=self.gmail)

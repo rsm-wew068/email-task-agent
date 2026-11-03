@@ -1,16 +1,13 @@
 """LLM provider resolution + model construction (plan D3; bake-off via env).
 
-Provider = first key present in order GEMINI_API_KEY -> ZAI_API_KEY ->
-LLM_API_KEY -> OPENAI_API_KEY. Explicit LLM_BASE_URL / CHAT_MODEL /
-EXTRACTION_MODEL always beat the provider defaults.
+Primary = HF Inference Providers (HF_TOKEN) → OpenRouter (OR_API_KEY). The
+non-primary key, when present, is the RUNTIME FAILOVER: a provider-level
+failure (throttled, out of credits, down) retries the same request on it.
 
-  OR_API_KEY     -> OpenRouter, deepseek/deepseek-v4.1-flash-1017
-  GEMINI_API_KEY -> Google AI Studio's OpenAI-compatible endpoint, gemini-3.8-flash
-  ZAI_API_KEY    -> Z.ai (GLM), glm-5.3-flash
-  LLM_API_KEY    -> whatever LLM_BASE_URL points at (set CHAT_MODEL too)
-  OPENAI_API_KEY -> api.openai.com (set CHAT_MODEL too)
+Explicit LLM_BASE_URL / CHAT_MODEL / EXTRACTION_MODEL always beat defaults:
 
-CHAT_MODEL / EXTRACTION_MODEL always override the provider's default model.
+  HF_TOKEN       -> router.huggingface.co, deepseek-ai/DeepSeek-V4.1-Flash-1017
+  OR_API_KEY     -> openrouter.ai, deepseek/deepseek-v4.1-flash-1017
 """
 
 from __future__ import annotations
@@ -23,9 +20,9 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from email_task_agent.config import Settings, settings
 
+_HF_BASE = "https://router.huggingface.co/v1"
 _OPENROUTER_BASE = "https://openrouter.ai/api/v1"
-_GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/"
-_ZAI_BASE = "https://api.z.ai/api/paas/v4/"
+_OPENROUTER_MODEL = "deepseek/deepseek-v4.1-flash-1017"
 
 
 def resolve_provider(s: Settings | None = None) -> tuple[str, str, str]:
@@ -34,22 +31,40 @@ def resolve_provider(s: Settings | None = None) -> tuple[str, str, str]:
     Explicit LLM_BASE_URL / CHAT_MODEL always override provider defaults.
     """
     s = s or settings()
+    if s.hf_token:
+        return (s.llm_base_url or _HF_BASE), s.hf_token, s.chat_model or "deepseek-ai/DeepSeek-V4.1-Flash-1017"
     if s.or_api_key:
-        return (
-            s.llm_base_url or _OPENROUTER_BASE,
-            s.or_api_key,
-            s.chat_model or "deepseek/deepseek-v4.1-flash-1017",
-        )
-    if s.gemini_api_key:
-        return (s.llm_base_url or _GEMINI_BASE), s.gemini_api_key, s.chat_model or "gemini-3.8-flash"
-    if s.zai_api_key or s.llm_api_key:
-        key = s.llm_api_key or s.zai_api_key
-        return (s.llm_base_url or _ZAI_BASE), key, s.chat_model or "glm-5.3-flash"
-    if s.openai_api_key:
-        if not s.llm_base_url or not s.chat_model:
-            raise RuntimeError("OPENAI_API_KEY needs LLM_BASE_URL and CHAT_MODEL set in .env")
-        return s.llm_base_url, s.openai_api_key, s.chat_model
-    raise RuntimeError("no LLM key configured (set OR_API_KEY, GEMINI_API_KEY or ZAI_API_KEY in .env)")
+        return (s.llm_base_url or _OPENROUTER_BASE), s.or_api_key, s.chat_model or _OPENROUTER_MODEL
+    raise RuntimeError("no LLM key configured (set HF_TOKEN or OR_API_KEY in .env)")
+
+
+def openrouter_fallback(s: Settings | None = None) -> Model | None:
+    """The OpenRouter model when HF is the primary and OR_API_KEY is set —
+    handed to ChatService for runtime failover. None otherwise."""
+    s = s or settings()
+    if not s.hf_token or not s.or_api_key:
+        return None
+    return OpenAIChatModel(
+        _OPENROUTER_MODEL,
+        provider=OpenAIProvider(base_url=_OPENROUTER_BASE, api_key=s.or_api_key),
+    )
+
+
+def provider_failure(exc: Exception) -> bool:
+    """True for provider-level failures worth a fallback retry: throttled,
+    out of credits, bad auth, provider down, connection/timeout. Everything
+    else — tool errors, programming errors, malformed requests (400) — is not:
+    those are our bug, and a second provider would only mask them."""
+    module = type(exc).__module__.split(".")[0]
+    if module == "openai":
+        import openai
+
+        return not isinstance(exc, openai.BadRequestError)
+    if module == "pydantic_ai":
+        from pydantic_ai.exceptions import ModelHTTPError
+
+        return isinstance(exc, ModelHTTPError) and exc.status_code not in (400, 422)
+    return False
 
 
 def build_model(model_name: str | None = None) -> Model:

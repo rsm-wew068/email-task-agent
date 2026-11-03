@@ -203,3 +203,83 @@ def test_run_turn_guardrails():
         service.run_turn(session_id, "another message while awaiting approval")
     with pytest.raises(ChatError):
         service.run_turn(999, "no such session")
+
+
+# -- runtime provider failover (HF throttled/out of credits -> OpenRouter) --------------
+
+
+def _throttled() -> Exception:
+    import httpx
+    import openai
+
+    request = httpx.Request("POST", "https://router.example/v1/chat/completions")
+    return openai.RateLimitError("throttled", response=httpx.Response(429, request=request), body=None)
+
+
+def _bad_request() -> Exception:
+    import httpx
+    import openai
+
+    request = httpx.Request("POST", "https://router.example/v1/chat/completions")
+    return openai.BadRequestError("bad prompt", response=httpx.Response(400, request=request), body=None)
+
+
+def _script(model_marker: str):
+    def script(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        return ModelResponse(parts=[TextPart(content=f"served by {model_marker}")])
+
+    return FunctionModel(script)
+
+
+def _crashing_script(exc: Exception):
+    def script(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        raise exc
+
+    return FunctionModel(script)
+
+
+def test_primary_throttled_falls_back_and_serves_the_turn():
+    store = MemoryStore()
+    service = ChatService(
+        store, _crashing_script(_throttled()), mode="demo", me="alex@x", fallback_model=_script("fallback")
+    )
+    session_id = service.create_session()
+    result = service.run_turn(session_id, "hi")
+    assert result.state == "idle"
+    assert result.error is None
+    assert "fallback" in result.reply
+
+
+def test_primary_throttled_without_fallback_fails_the_turn():
+    store = MemoryStore()
+    service = ChatService(store, _crashing_script(_throttled()), mode="demo", me="alex@x")
+    session_id = service.create_session()
+    result = service.run_turn(session_id, "hi")
+    assert result.state == "failed"
+    assert "throttled" in result.error
+
+
+def test_bad_request_is_not_masked_by_the_fallback():
+    store = MemoryStore()
+    service = ChatService(
+        store, _crashing_script(_bad_request()), mode="demo", me="alex@x", fallback_model=_script("fallback")
+    )
+    session_id = service.create_session()
+    result = service.run_turn(session_id, "hi")
+    assert result.state == "failed"
+
+
+def test_tool_crash_is_not_masked_by_the_fallback():
+    """A tool raising mid-run is our bug: failover must not re-run the turn on
+    another model (the crash-retry test above depends on this behavior too)."""
+    store = MemoryStore()
+    service = ChatService(
+        store,
+        _crashing_script(RuntimeError("gmail exploded")),
+        mode="demo",
+        me="alex@x",
+        fallback_model=_script("fallback"),
+    )
+    session_id = service.create_session()
+    result = service.run_turn(session_id, "hi")
+    assert result.state == "failed"

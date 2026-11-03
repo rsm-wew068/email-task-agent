@@ -52,6 +52,11 @@ export default function TaskTable({ tasks, today }: { tasks: TaskView[]; today: 
                 {task.merged && (
                   <div className="mt-0.5 text-xs text-gray-400">merged thread — undo below</div>
                 )}
+                {task.evidence_quote && (
+                  <blockquote className="mt-1.5 max-w-md truncate border-l-2 border-indigo-200 pl-2 text-xs italic text-gray-500" title={task.evidence_quote}>
+                    “{task.evidence_quote}”
+                  </blockquote>
+                )}
               </td>
               <td className="px-4 py-3">
                 {task.owner_email ? (

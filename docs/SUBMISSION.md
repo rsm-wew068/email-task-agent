@@ -80,14 +80,20 @@ the problem isn't worth solving this way.
 
 ## Prototype
 
-The live demo completes the workflow end to end: browse the task board and calendar derived from a
-synthetic mailbox (labeled as such), then use the chat agent — ask *"what needs follow-up?"* and it reads
-your task data through typed SQL tools; ask it to draft a reply and it stops at an approval card with the
-full arguments. **Approve** executes (external writes are stubbed in demo mode and labeled), **Deny**
-declines with an explicit "not created" reply.
+The live demo completes the workflow end to end, including extraction itself: the demo mailbox is
+synthetic (labeled as such), but pressing **Re-extract** on any thread runs the *real* pipeline — one
+structured LLM call → validation → reconciliation — exactly what Gmail sync runs. In a fresh demo,
+re-extracting the "October expenses" thread creates the task **"File October expense report"** on the
+board with the evidence quote *"Please file your October expense report by Tuesday so payroll can
+reimburse you this cycle."* and the due date resolved from "by Tuesday"; re-running it extracts nothing,
+because the already-extracted task is shown to the model as context. Then use the chat agent — ask
+*"what needs follow-up?"* and it reads your task data through typed SQL tools; ask it to draft a reply
+and it stops at an approval card with the full arguments. **Approve** executes the action (demo external
+writes are stubbed and labeled), **Deny** declines with an explicit "not created" reply.
 
-**Representative use case:** board review → chat: grounded answer citing task IDs → draft request →
-approval → executed action recorded in the event log.
+**Representative use case:** re-extract a thread → the task lands on the board with its evidence quote →
+chat: grounded answer citing task IDs → draft request → approval → the action executes and is recorded
+in the event log.
 
 **Difficult and invalid-input cases, demonstrable in the demo:**
 - A duplicate task and a low-confidence update become **review-queue suggestions** instead of silent
@@ -102,9 +108,11 @@ approval → executed action recorded in the event log.
 **Implemented:** extraction pipeline (extract → validate evidence → reconcile, no auto-merge), SQL store
 with event log, approval state machine, chat agent with tools, eval harnesses with pinned baselines
 (E1/E1-U/E2), Next.js UI, CI, one-container deployment. **Mocked (labeled):** the demo mailbox is
-synthetic; demo external writes produce ids but touch nothing; with no LLM key a scripted mock model runs
-the whole approval flow. **Deferred:** authentication (demo holds synthetic data only), streaming, and
-the real Gmail connection on a private instance (OAuth code present).
+synthetic; demo external writes record the action but touch nothing; with no LLM key a scripted mock
+model runs the whole approval flow. **Implemented but not yet exercised live:** the Gmail integration —
+the OAuth flow, the `history.list` client, and the sync pipeline are written and covered by tests
+against a fake client, but no run has yet gone through a real mailbox; that is the first step on a
+private instance. **Deferred:** authentication (demo holds synthetic data only) and streaming.
 
 Setup, dependencies, sample data, and example inputs/outputs are in the
 [README](https://github.com/rsm-wew068/email-task-agent#readme) — the keyless demo runs with two

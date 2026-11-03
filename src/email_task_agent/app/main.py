@@ -130,12 +130,19 @@ def build_default_app() -> FastAPI:
 
         chat_service = ChatService(store, build_mock_model(), mode=mode, me=owner_email)
 
-    if mode == "private" and settings().api_key:
-        from email_task_agent.llm import model_for_purpose
+    if settings().api_key:
         from email_task_agent.pipeline.extract import ExtractionAgent
-        from email_task_agent.pipeline.sync import SyncService
 
         extraction = ExtractionAgent(model_for_purpose("extraction"))
+
+        def banner(outcome) -> str:
+            return (
+                f"Re-extracted {outcome.gmail_thread_id}: "
+                f"{len(outcome.inserted_task_ids)} new tasks, {outcome.suggestions} suggestions."
+            )
+
+    if mode == "private" and settings().api_key:
+        from email_task_agent.pipeline.sync import SyncService
 
         def make_service() -> SyncService:
             from email_task_agent.gmail.client import GmailClient, build_gmail
@@ -156,10 +163,23 @@ def build_default_app() -> FastAPI:
         def run_reextract(gmail_thread_id: str) -> str:
             from email_task_agent.pipeline.sync import reextract_thread
 
-            outcome = reextract_thread(store, make_service().client, extraction.extract, owner_email=owner_email, gmail_thread_id=gmail_thread_id)
-            return f"Re-extracted {gmail_thread_id}: {len(outcome.inserted_task_ids)} tasks, {outcome.suggestions} suggestions."
+            return banner(reextract_thread(store, make_service().client, extraction.extract, owner_email=owner_email, gmail_thread_id=gmail_thread_id))
 
         sync_runner = run_sync
+        reextract_runner = run_reextract
+    elif mode == "demo" and settings().api_key:
+        # Demo re-extract runs the REAL pipeline (extract -> validate -> reconcile)
+        # over a seeded thread — the same code path Gmail sync uses, minus Gmail.
+
+        def run_reextract(gmail_thread_id: str) -> str:
+            from email_task_agent.demo.seed import load_demo_thread
+            from email_task_agent.pipeline.sync import reextract_thread_data
+
+            thread = load_demo_thread(gmail_thread_id)
+            if thread is None:
+                raise KeyError(gmail_thread_id)
+            return banner(reextract_thread_data(store, thread, extraction.extract, owner_email=owner_email))
+
         reextract_runner = run_reextract
 
     deps = Deps(store=store, mode=mode, owner_email=owner_email, chat=chat_service, sync_runner=sync_runner, reextract_runner=reextract_runner)

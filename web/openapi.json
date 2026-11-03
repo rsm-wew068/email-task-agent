@@ -214,6 +214,11 @@
             "title": "Owner Email",
             "type": "string"
           },
+          "reextract_enabled": {
+            "default": false,
+            "title": "Reextract Enabled",
+            "type": "boolean"
+          },
           "sync_enabled": {
             "title": "Sync Enabled",
             "type": "boolean"
@@ -349,6 +354,17 @@
               }
             ],
             "title": "Due Date"
+          },
+          "evidence_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Quote"
           },
           "gmail_thread_id": {
             "anyOf": [

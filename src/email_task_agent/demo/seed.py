@@ -158,3 +158,41 @@ def _seed_review_demo(store: Store, *, owner_email: str) -> int:
         history_id=None,
     )
     return 2
+
+
+def load_demo_thread(gmail_thread_id: str, data_dir: Path | None = None):
+    """A checked-in mailbox thread as a SyncThread, ready for the sync pipeline.
+
+    Returns None when the id is not in the demo mailbox. This is what lets the
+    demo run the real extraction pipeline without a Gmail connection."""
+    from email_task_agent.pipeline.sync import SyncMessage, SyncThread
+
+    for thread in _load("demo_mailbox.json", data_dir).get("threads", []):
+        if thread["thread_id"] != gmail_thread_id:
+            continue
+        emails = thread["emails"]
+        participants = sorted({e["from"].casefold() for e in emails} | {
+            addr.casefold() for e in emails for addr in e.get("to", []) + e.get("cc", [])
+        })
+        messages = [
+            SyncMessage(
+                message_id=f"{gmail_thread_id}#{index}",
+                sender=e["from"],
+                to=list(e.get("to", [])),
+                cc=list(e.get("cc", [])),
+                internal_date=datetime.fromisoformat(e["date"]) if e.get("date") else datetime.now(),
+                subject=e["subject"],
+                body=e["body"],
+            )
+            for index, e in enumerate(emails)
+        ]
+        cached_text = "\n\n".join(f"Subject: {e['subject']}\n\n{e['body']}" for e in emails)
+        return SyncThread(
+            gmail_thread_id=gmail_thread_id,
+            subject=emails[0]["subject"] if emails else None,
+            participants=participants,
+            messages=messages,
+            history_id="demo",
+            cached_text=cached_text,
+        )
+    return None

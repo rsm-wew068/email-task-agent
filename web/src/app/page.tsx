@@ -111,7 +111,7 @@ export default async function TasksPage({
                     t.last_message_at ? formatWhen(t.last_message_at) : "—"
                   }</td>
                   <td className="px-4 py-2.5 text-right">
-                    {meta.sync_enabled && <ReextractButton gmailThreadId={t.gmail_thread_id} />}
+                    {meta.reextract_enabled && <ReextractButton gmailThreadId={t.gmail_thread_id} />}
                   </td>
                 </tr>
               ))}

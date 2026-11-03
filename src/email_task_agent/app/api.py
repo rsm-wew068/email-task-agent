@@ -33,6 +33,7 @@ class MetaView(BaseModel):
     owner_email: str
     chat_enabled: bool
     sync_enabled: bool
+    reextract_enabled: bool = False
 
 
 class TaskView(BaseModel):
@@ -46,6 +47,7 @@ class TaskView(BaseModel):
     merged: bool
     thread_id: int | None
     gmail_thread_id: str | None
+    evidence_quote: str | None = None
 
 
 class SuggestionView(BaseModel):
@@ -131,6 +133,7 @@ def _task_view(row: TaskRow, *, merged: bool = False) -> TaskView:
         merged=merged,
         thread_id=row.thread_id,
         gmail_thread_id=row.gmail_thread_id,
+        evidence_quote=row.evidence_quote,
     )
 
 
@@ -194,6 +197,7 @@ def build_api_router(deps: Deps) -> APIRouter:
             owner_email=deps.owner_email,
             chat_enabled=deps.chat is not None,
             sync_enabled=deps.sync_runner is not None,
+            reextract_enabled=deps.reextract_runner is not None,
         )
 
     @router.get("/tasks", response_model=TaskBoardView)
@@ -254,7 +258,10 @@ def build_api_router(deps: Deps) -> APIRouter:
     def reextract(gmail_thread_id: str) -> BannerView:
         if deps.reextract_runner is None:
             return BannerView(message="Re-extract is not configured in this instance.")
-        return BannerView(message=deps.reextract_runner(gmail_thread_id))
+        try:
+            return BannerView(message=deps.reextract_runner(gmail_thread_id))
+        except KeyError:
+            raise HTTPException(status_code=404, detail=f"unknown thread {gmail_thread_id}")
 
     # -- chat -------------------------------------------------------------------------
 

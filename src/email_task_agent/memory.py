@@ -117,6 +117,7 @@ class MemoryStore:
             due_date=task.due_date, status=task.status, confidence=task.confidence,
             needs_review=task.needs_review, thread_id=task.thread_id,
             gmail_thread_id=thread.gmail_thread_id if thread else None,
+            evidence_quote=task.sources[0][1] if task.sources else None,
         )
 
     def _existing(self, task: _Task) -> ExistingTask:

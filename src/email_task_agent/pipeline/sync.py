@@ -173,10 +173,13 @@ class SyncService:
         )
 
 
+def reextract_thread_data(store: Store, sync_thread: SyncThread, extract_fn, *, owner_email: str) -> SyncOutcome:
+    """Run the standard pipeline over one thread, treating every message as new."""
+    service = SyncService(store, None, extract_fn, owner_email=owner_email, cap_per_run=1)
+    store.reset_thread_processed(sync_thread.gmail_thread_id)
+    return service._process_thread(sync_thread)
+
+
 def reextract_thread(store: Store, client: GmailClientProtocol, extract_fn, *, owner_email: str, gmail_thread_id: str) -> SyncOutcome:
-    """Manual re-extract: reset processed marks so
-    the whole thread is treated as new, then run the standard pipeline."""
-    service = SyncService(store, client, extract_fn, owner_email=owner_email, cap_per_run=1)
-    thread = client.fetch_single(gmail_thread_id)
-    store.reset_thread_processed(gmail_thread_id)
-    return service._process_thread(thread)
+    """Manual re-extract of a live Gmail thread: fetch it, then run the pipeline."""
+    return reextract_thread_data(store, client.fetch_single(gmail_thread_id), extract_fn, owner_email=owner_email)

@@ -327,6 +327,11 @@ export interface components {
             mode: string;
             /** Owner Email */
             owner_email: string;
+            /**
+             * Reextract Enabled
+             * @default false
+             */
+            reextract_enabled: boolean;
             /** Sync Enabled */
             sync_enabled: boolean;
             /** Version */
@@ -370,6 +375,8 @@ export interface components {
         TaskView: {
             /** Due Date */
             due_date: string | null;
+            /** Evidence Quote */
+            evidence_quote?: string | null;
             /** Gmail Thread Id */
             gmail_thread_id: string | null;
             /** Id */

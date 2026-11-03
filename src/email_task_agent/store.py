@@ -46,6 +46,7 @@ class TaskRow:
     needs_review: bool
     thread_id: int | None
     gmail_thread_id: str | None
+    evidence_quote: str | None = None  # first source's quote; None for calendar rows
 
 
 @dataclass(frozen=True)
@@ -501,10 +502,15 @@ def list_tasks_db(conn: psycopg.Connection, *, q: str | None = None, status: str
         cur.execute(
             f"""
             select t.id, t.title, p.email, p.display_name, t.due_date, t.status,
-                   t.confidence, t.needs_review, t.thread_id, th.gmail_thread_id
+                   t.confidence, t.needs_review, t.thread_id, th.gmail_thread_id,
+                   src.evidence_quote
             from tasks t
             left join people p on p.id = t.owner_person_id
             left join threads th on th.id = t.thread_id
+            left join lateral (
+                select s.evidence_quote from task_sources s
+                where s.task_id = t.id order by s.id limit 1
+            ) src on true
             where {' and '.join(clauses)}
             order by t.due_date nulls last, t.id desc
             """,
@@ -518,10 +524,15 @@ def task_detail_db(conn: psycopg.Connection, task_id: int):
         cur.execute(
             """
             select t.id, t.title, p.email, p.display_name, t.due_date, t.status,
-                   t.confidence, t.needs_review, t.thread_id, th.gmail_thread_id
+                   t.confidence, t.needs_review, t.thread_id, th.gmail_thread_id,
+                   src.evidence_quote
             from tasks t
             left join people p on p.id = t.owner_person_id
             left join threads th on th.id = t.thread_id
+            left join lateral (
+                select s.evidence_quote from task_sources s
+                where s.task_id = t.id order by s.id limit 1
+            ) src on true
             where t.id = %s
             """,
             (task_id,),

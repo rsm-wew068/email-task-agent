@@ -70,7 +70,6 @@ web/                   Next.js 16 app (server components + server actions)
 evals/data|baselines/  generated suites + pinned baselines (checked in)
 tests/                 unit + API + 9 Next.js e2e (Playwright vs next start)
 deploy/                HF Space image + entrypoint (the public demo)
-docs/                  supplementary notes (future plan)
 ```
 
 ## Quickstart (two processes)
@@ -153,8 +152,3 @@ E1 baselines are versioned code (`SCORER_VERSION`): re-record with
 `--record-baseline evals/baselines/e1_baseline.json`, gate with
 `--gate evals/baselines/e1_baseline.json` (exit 1 = regression). Changes to matching,
 normalization, or thresholds bump the version and re-record in the same PR.
-
-## Future plan
-
-Roadmap and known limitations (including honest deviations from the plan) live in
-[docs/FUTURE_PLAN.md](docs/FUTURE_PLAN.md).

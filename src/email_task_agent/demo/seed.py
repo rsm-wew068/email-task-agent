@@ -20,7 +20,10 @@ from email_task_agent.pipeline.reconcile import InsertTask, ReconcileOutput
 from email_task_agent.store import Store
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DATA_DIR = REPO_ROOT / "evals" / "data"
+# Repo checkout: <root>/evals/data. When installed as a wheel (Docker Space) the
+# module lives under site-packages, so fall back to the working directory's copy.
+_DATA_CANDIDATES = [REPO_ROOT / "evals" / "data", Path.cwd() / "evals" / "data"]
+DATA_DIR = next((p for p in _DATA_CANDIDATES if p.is_dir()), _DATA_CANDIDATES[0])
 
 
 def _load(name: str, data_dir: Path | None) -> dict:

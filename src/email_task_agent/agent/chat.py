@@ -8,6 +8,7 @@ action happened unless the tool returned success; cite task IDs and evidence.
 
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import date
@@ -190,16 +191,32 @@ def build_chat_agent(model: Model) -> Agent[ChatDeps, str]:
     return agent
 
 
+_DEMO_SEARCH_STOP = {
+    "or", "and", "in", "is", "has", "after", "before", "newer_than", "older_than",
+    "from", "to", "cc", "bcc", "subject", "label", "category", "filename",
+    "larger", "smaller", "list", "anywhere",
+}
+
+
 def _demo_mail_search(store: Store, query: str) -> list[dict]:
-    """Demo instances hold synthetic mail only (D8): substring search over the
-    seeded cached thread text."""
-    needle = query.strip().casefold()
-    results = []
+    """Demo instances hold synthetic mail only (D8): token match over the seeded
+    cached thread text. Gmail operators (from:, subject:, newer_than:7d, OR) are
+    stripped first so Gmail-syntax queries still find the seeded threads."""
+    tokens = [
+        t
+        for t in re.findall(r"[a-z0-9_@.\-]+", query.casefold())
+        if t not in _DEMO_SEARCH_STOP and not t.isdigit()
+    ]
+    ranked: list[tuple[dict, int]] = []
     for thread in store.list_threads():
-        if thread.cached_text and needle in thread.cached_text.casefold():
-            snippet_index = thread.cached_text.casefold().find(needle)
-            snippet = thread.cached_text[max(0, snippet_index - 40) : snippet_index + 80].replace("\n", " ")
-            results.append(
+        text = (thread.cached_text or "").casefold()
+        hits = [t for t in tokens if t in text]
+        if not hits:
+            continue
+        anchor = text.find(hits[0])
+        snippet = thread.cached_text[max(0, anchor - 40) : anchor + 80].replace("\n", " ")
+        ranked.append(
+            (
                 {
                     "gmail_message_id": "-",
                     "thread_id": thread.gmail_thread_id,
@@ -207,11 +224,12 @@ def _demo_mail_search(store: Store, query: str) -> list[dict]:
                     "subject": thread.subject or "(no subject)",
                     "date": str(thread.last_message_at.date()) if thread.last_message_at else "",
                     "snippet": snippet,
-                }
+                },
+                len(hits),
             )
-        if len(results) >= 10:
-            break
-    return results
+        )
+    ranked.sort(key=lambda pair: -pair[1])
+    return [row for row, _ in ranked[:10]]
 
 
 def create_event_external(deps: ChatDeps, summary: str, start: str, end: str) -> str:

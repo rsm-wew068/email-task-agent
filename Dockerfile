@@ -4,12 +4,16 @@ WORKDIR /app
 
 # Install deps first for layer caching (uv.lock is committed).
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
-
+# Install the app package as a real wheel: --no-install-project would leave it
+# unimportable, uv's default editable install needs `uv run` to inject the source
+# path, and src/ must precede the sync or the wheel builds empty. README.md
+# precedes the sync because hatchling needs it.
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
+RUN uv sync --frozen --no-dev --no-editable
+
 COPY migrations ./migrations
 COPY evals ./evals
-COPY README.md ./
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1

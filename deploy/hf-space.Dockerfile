@@ -11,14 +11,20 @@ COPY web/ ./
 RUN npm run build
 
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+# node's binary (copied from the node image) links against libatomic
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=web /usr/local /usr/local
 WORKDIR /app
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
+COPY pyproject.toml uv.lock README.md ./
+# src must precede the sync: uv builds the app wheel from the project dir, so a
+# missing src/ yields an empty wheel. --no-editable: uv's editable installs only
+# register metadata and expect `uv run` to inject the source path at runtime;
+# the container starts uvicorn directly.
 COPY src ./src
+RUN uv sync --frozen --no-dev --no-editable
 COPY migrations ./migrations
 COPY evals ./evals
-COPY README.md ./
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
 COPY --from=web /web/.next /web/.next
 COPY --from=web /web/node_modules /web/node_modules

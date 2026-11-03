@@ -1,0 +1,12 @@
+.git
+.venv
+web/node_modules
+web/.next
+web/tsconfig.tsbuildinfo
+**/__pycache__
+.env*
+tests
+docs
+*.md
+!README.md
+.vercel

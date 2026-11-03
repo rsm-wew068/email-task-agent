@@ -84,7 +84,7 @@ press *Sync now*.
 Everything lives in **`.env` at the repo root** (gitignored — copy from `.env.example`):
 
 ```bash
-LLM_API_KEY=<your Z.ai key>            # falls back to OPENAI_API_KEY if you prefer OpenAI
+ZAI_API_KEY=<your Z.ai key>            # LLM_API_KEY / OPENAI_API_KEY also accepted
 # LLM_BASE_URL=https://api.z.ai/api/paas/v4/   # the default; any OpenAI-compatible endpoint works
 # CHAT_MODEL=glm-5.3-flash                     # defaults shown; override for the D3 bake-off
 # EXTRACTION_MODEL=glm-5.3-flash

@@ -15,7 +15,7 @@ export default async function ChatPage() {
           <ChatPanel />
         ) : (
           <p className="text-gray-500">
-            Chat is disabled: set LLM_API_KEY (or OPENAI_API_KEY) in the backend&apos;s .env and
+            Chat is disabled: set ZAI_API_KEY (or OPENAI_API_KEY) in the backend&apos;s .env and
             restart it.
           </p>
         )}

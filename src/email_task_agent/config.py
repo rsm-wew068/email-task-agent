@@ -14,7 +14,8 @@ class Settings(BaseSettings):
 
     # LLM wiring (plan §D3 via bake-off). Z.ai's API is OpenAI-compatible, so
     # any provider that speaks that protocol works through LLM_BASE_URL.
-    llm_api_key: str | None = None  # falls back to OPENAI_API_KEY
+    zai_api_key: str | None = None  # Z.ai's native variable name
+    llm_api_key: str | None = None  # generic alias
     llm_base_url: str = "https://api.z.ai/api/paas/v4/"
     chat_model: str = "glm-5.3-flash"
     extraction_model: str = "glm-5.3-flash"
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
 
     @property
     def api_key(self) -> str | None:
-        return self.llm_api_key or self.openai_api_key
+        return self.llm_api_key or self.zai_api_key or self.openai_api_key
 
 
 @lru_cache

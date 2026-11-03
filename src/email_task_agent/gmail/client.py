@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 from datetime import UTC, datetime
 from email.message import EmailMessage
+from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -26,20 +28,34 @@ SCOPES = [
     "https://www.googleapis.com/auth/tasks",
 ]
 
+TOKEN_FILENAME = "token.json"  # written by scripts/auth_gmail.py (repo root, gitignored)
+
 _SKIP_LABELS = {"TRASH", "SPAM", "CATEGORY_PROMOTIONS", "CATEGORY_SOCIAL"}
 
 
-def load_credentials(token_path: str) -> Credentials:
-    with open(token_path) as fh:
-        creds = Credentials(**json.load(fh))
+def load_credentials(token_path: str = TOKEN_FILENAME) -> Credentials:
+    """Load OAuth credentials from token.json — or from the GMAIL_TOKEN_JSON
+    env var (the full token.json contents) when deploying, where the
+    filesystem is ephemeral and secrets belong in the environment."""
+    raw: str | None = None
+    if Path(token_path).exists():
+        raw = Path(token_path).read_text()
+    elif env_token := os.environ.get("GMAIL_TOKEN_JSON"):
+        raw = env_token
+    if not raw:
+        raise RuntimeError(
+            f"No Gmail credentials: run scripts/auth_gmail.py (creates {token_path}) "
+            "or set GMAIL_TOKEN_JSON."
+        )
+    creds = Credentials(**json.loads(raw))
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
-        with open(token_path, "w") as fh:
-            fh.write(creds.to_json())
+        if Path(token_path).exists():
+            Path(token_path).write_text(creds.to_json())
     return creds
 
 
-def build_gmail(token_path: str):
+def build_gmail(token_path: str = TOKEN_FILENAME):
     return build("gmail", "v1", credentials=load_credentials(token_path))
 
 

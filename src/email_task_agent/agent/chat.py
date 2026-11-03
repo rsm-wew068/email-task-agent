@@ -220,7 +220,7 @@ def create_event_external(deps: ChatDeps, summary: str, start: str, end: str) ->
 
     from email_task_agent.gmail.client import load_credentials
 
-    calendar = google_build("calendar", "v3", credentials=load_credentials(".credentials/token.json"))
+    calendar = google_build("calendar", "v3", credentials=load_credentials())
     event = calendar.events().insert(
         calendarId="primary",
         body={"summary": summary, "start": {"dateTime": start}, "end": {"dateTime": end}},
@@ -233,7 +233,7 @@ def create_task_external(deps: ChatDeps, title: str, due: str | None) -> str:
 
     from email_task_agent.gmail.client import load_credentials
 
-    tasks = google_build("tasks", "v1", credentials=load_credentials(".credentials/token.json"))
+    tasks = google_build("tasks", "v1", credentials=load_credentials())
     body = {"title": title}
     if due:
         body["due"] = due

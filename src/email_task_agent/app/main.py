@@ -92,7 +92,7 @@ def build_default_app() -> FastAPI:
 
             return SyncService(
                 store,
-                GmailClient(build_gmail(".credentials/token.json"), me=owner_email),
+                GmailClient(build_gmail(), me=owner_email),
                 extraction.extract,
                 owner_email=owner_email,
             )

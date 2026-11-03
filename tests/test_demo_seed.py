@@ -9,8 +9,8 @@ from email_task_agent.demo.seed import seed_demo_instance
 from email_task_agent.memory import MemoryStore
 
 _SUITE = json.loads((Path(__file__).resolve().parents[1] / "evals" / "data" / "e1_test.json").read_text())
-SEED_GOLD_COUNT = sum(len(t["gold"]) for t in _SUITE["threads"])
-SEED_THREAD_COUNT = sum(1 for t in _SUITE["threads"]) + 8  # + demo-only extras
+SEED_GOLD_COUNT = sum(len(t["gold"]) for t in _SUITE["threads"]) + 2  # + crafted review-queue pair
+SEED_THREAD_COUNT = sum(1 for t in _SUITE["threads"]) + 11  # + 8 demo extras + 3 review-queue threads
 
 
 def test_seed_lands_all_gold_tasks() -> None:

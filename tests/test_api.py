@@ -20,7 +20,7 @@ from email_task_agent.pipeline.reconcile import InsertTask, ReconcileOutput, Sug
 OWNER = "alex@fernwoodlabs.com"
 
 _SUITE = json.loads((Path(__file__).resolve().parents[1] / "evals" / "data" / "e1_test.json").read_text())
-SEED_GOLD_COUNT = sum(len(t["gold"]) for t in _SUITE["threads"])
+SEED_GOLD_COUNT = sum(len(t["gold"]) for t in _SUITE["threads"]) + 2  # + crafted review-queue pair
 SEED_DATED_COUNT = sum(1 for t in _SUITE["threads"] for g in t["gold"] if g.get("due_date"))
 
 
@@ -165,17 +165,17 @@ def seed_duplicate_suggestion(store: MemoryStore) -> tuple[int, int]:
         )
         return inserted[0]
 
-    existing_id = insert("Send signed form", "m1")
-    new_id = insert("Send signed form", "m2")
+    existing_id = insert("Send signed NDA", "m1")
+    new_id = insert("Send signed NDA", "m2")
     insert(
-        "Send signed form",
+        "Send signed NDA",
         "m3",
         suggestion=Suggest(
             kind="possible_duplicate", task_id=existing_id, other_task_id=new_id,
-            payload={"new_title": "Send signed form"},
+            payload={"new_title": "Send signed NDA"},
         ),
     )
-    suggestion = store.pending_suggestions()[0]
+    suggestion = store.pending_suggestions()[-1]  # ours is the last seeded
     store.suggestions[suggestion.id] = suggestion.__class__(
         suggestion.id, suggestion.kind, existing_id, new_id, suggestion.payload, "pending", suggestion.created_at
     )
@@ -197,7 +197,8 @@ def test_suggestion_accept_merges():
     tasks_before = len(store.list_tasks())
     response = client.post(f"/api/suggestions/{suggestion_id}/accept", json={"keep": existing_id})
     assert response.json()["ok"] is True
-    assert client.get("/api/tasks").json()["suggestions"] == []
+    remaining = {s.id for s in store.pending_suggestions()}
+    assert suggestion_id not in remaining  # ours decided (the seeded review demo may still be pending)
     assert len(store.list_tasks()) == tasks_before - 1  # folded into the kept row
 
 

@@ -94,4 +94,64 @@ def seed_demo_instance(store: Store, *, owner_email: str, data_dir: Path | None 
         store.apply_thread_ops(thread_db_id, ReconcileOutput(inserts=inserts), new_message_ids=[], history_id=None)
         seeded_tasks += len(inserts)
 
-    return f"Seeded demo: {seeded_threads} threads, {seeded_tasks} tasks."
+    seeded_tasks += _seed_review_demo(store, owner_email=owner_email)
+    return f"Seeded demo: {seeded_threads} threads, {seeded_tasks} tasks, 1 review-queue suggestion."
+
+
+def _seed_review_demo(store: Store, *, owner_email: str) -> int:
+    """A crafted duplicate pair + pending suggestion so the review queue has
+    content in a fresh demo (suggestions otherwise only come from live syncs)."""
+    from email_task_agent.models.extraction import NewTask
+    from email_task_agent.pipeline.reconcile import Suggest
+
+    existing = [t for t in store.list_tasks() if t.title == "Send signed renewal contract"]
+    if existing:
+        return 0  # already seeded
+
+    def insert(title: str, message_id: str) -> int:
+        thread_db_id = store.upsert_thread(
+            f"demo-review-{message_id}",
+            subject="Renewal paperwork",
+            participants=[owner_email],
+            last_message_at=None,
+            cached_text="please send the signed renewal contract",
+        )
+        inserted = store.apply_thread_ops(
+            thread_db_id,
+            ReconcileOutput(
+                inserts=[
+                    InsertTask(
+                        NewTask(
+                            title=title,
+                            source_message_id=message_id,
+                            evidence_quote="please send the signed renewal contract",
+                        ),
+                        owner_email,
+                        None,
+                        False,
+                    )
+                ]
+            ),
+            new_message_ids=[message_id],
+            history_id=None,
+        )
+        return inserted[0]
+
+    first = insert("Send signed renewal contract", "demo-review-m1")
+    second = insert("Send signed renewal contract", "demo-review-m2")
+    store.apply_thread_ops(
+        store.upsert_thread("demo-review-s", subject="s", participants=[owner_email], last_message_at=None, cached_text="x"),
+        ReconcileOutput(
+            suggestions=[
+                Suggest(
+                    kind="possible_duplicate",
+                    task_id=first,
+                    other_task_id=second,
+                    payload={"new_title": "Send signed renewal contract"},
+                )
+            ]
+        ),
+        new_message_ids=[],
+        history_id=None,
+    )
+    return 2

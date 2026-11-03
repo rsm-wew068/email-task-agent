@@ -66,8 +66,9 @@ def build_default_app() -> FastAPI:
     sync_runner = None
     reextract_runner = None
 
+    from email_task_agent.chat.service import ChatService
+
     if settings().api_key:
-        from email_task_agent.chat.service import ChatService
         from email_task_agent.llm import model_for_purpose
 
         # Demo spend control (plan §11: 100 turns/day); unlimited when private.
@@ -79,6 +80,13 @@ def build_default_app() -> FastAPI:
             me=owner_email,
             daily_turn_cap=cap,
         )
+    elif mode == "demo":
+        # Keyless demo: a SCRIPTED MOCK LLM (clearly labeled — the case-study
+        # brief allows labeled mocks) so reviewers can run the whole workflow,
+        # including the approval flow, with zero accounts or keys.
+        from email_task_agent.llm_mock import build_mock_model
+
+        chat_service = ChatService(store, build_mock_model(), mode=mode, me=owner_email)
 
     if mode == "private" and settings().api_key:
         from email_task_agent.llm import model_for_purpose

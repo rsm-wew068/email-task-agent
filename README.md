@@ -112,6 +112,32 @@ INSTANCE_MODE=private                          # only meaningful with DATABASE_U
 work); exact connection strings and pooler notes are in `.env.example`. Migrations
 apply automatically when the backend starts. Restart the backend after editing `.env`.
 
+### Sample data and an example exchange
+
+The demo mailbox is checked in (`evals/data/demo_mailbox.json` + the gold labels in
+`evals/data/e1_test.json`); any backend seeds it at boot (11 tasks / 23 threads /
+1 review suggestion). A minimal example against the running backend:
+
+```bash
+curl -s -X POST localhost:8000/api/chat/sessions -d '{}' | jq .session_id   # -> 1
+curl -s -X POST localhost:8000/api/chat/sessions/1/messages \
+     -H 'content-type: application/json' -d '{"text":"What needs follow-up?"}' | jq '.state, .messages[-1].text'
+# -> "idle"  (an answer grounded in the task list)
+curl -s -X POST localhost:8000/api/chat/sessions/1/messages \
+     -H 'content-type: application/json' -d '{"text":"Draft a follow-up to Kate"}' \
+     | jq .state
+# -> "awaiting_approval"  (.actions[0] holds the full proposed draft to review)
+curl -s -X POST localhost:8000/api/chat/sessions/1/approve \
+     -H 'content-type: application/json' \
+     -d '{"version":8,"decisions":{"mock-draft-1":"approve"}}' | jq '.state, .messages[-1].text'
+# -> "idle"  "Created (id=demo-create_gmail_draft-…)"  (demo writes are stubbed and labeled)
+```
+
+Use the `version` and `tool_call_id` values from the `awaiting_approval` response —
+the ones above are from a fresh seed. Invalid inputs are rejected with data, not
+500s: a stale `version` returns the current session unchanged, and decisions that
+don't cover exactly the pending tool calls return an error message.
+
 ## Deployment (Hugging Face Space)
 
 The public demo is **one HF Space running everything in a single container**: an

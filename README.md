@@ -1,20 +1,29 @@
 # email-task-agent
 
-Prototype agent per the implementation plan (rev 5): Gmail threads in, deduplicated
-status-tracked tasks out, plus an approval-gated chat agent over your own task data.
+Gmail threads in, deduplicated status-tracked tasks out, plus an approval-gated chat
+agent over your own task data (implementation plan rev 5).
 
-**Live demo** (public, synthetic data, chat backed by DeepSeek via OpenRouter, capped at
-100 turns/day): https://rsm-wew068-email-task-agent.hf.space
+**Live demo** (public, synthetic data only): https://rsm-wew068-email-task-agent.hf.space —
+chat runs on DeepSeek via the HF Inference Providers router, with automatic failover to
+OpenRouter when HF throttles or runs out of credits. Capped at 100 turns/day.
 
-Replaces the [automated-task-manager](https://huggingface.co/spaces/rsm-wew068/automated-task-manager)
-prototype: no graph database (append-only `task_events` log instead), no vector RAG
-(whole thread in context + typed SQL tools), single-user instances.
+## Try the demo
+
+- Browse the **tasks board and inbox threads** — a synthetic mailbox persisted in a
+  real Postgres (embedded in the demo container), 11 tasks / 23 threads at seed time.
+- Ask the **chat agent** something like *"what needs follow-up?"* — it reads your task
+  data via typed SQL tools and proposes actions (draft an email, create a task) as
+  approval cards. **Approve** executes (external writes are stubbed in demo mode),
+  **Deny** declines; double clicks and second tabs get the server's stale-version
+  answer instead of double-applying.
+- The demo restarts clean: the embedded database reseeds on boot, so there is nothing
+  to pause, wake, or deregister.
 
 ## Architecture
 
 ```
 Browser ──(pages + server actions)──▶ Next.js 16 (web/) ──(typed fetch, BACKEND_URL)──▶ FastAPI /api/*
-                                                                            ├── Store: Neon Postgres | in-memory demo
+                                                                            ├── Store: Postgres | in-memory demo
                                                                             ├── ChatService: §8.2 state machine
                                                                             └── Gmail / Calendar / Tasks via approved tools
 ```
@@ -25,9 +34,9 @@ Browser ──(pages + server actions)──▶ Next.js 16 (web/) ──(typed f
 - **Frontend**: Next.js 16 App Router in `web/` — server components read, server actions
   write, Tailwind 4. Contract: FastAPI response models → `openapi.json` →
   `openapi-typescript` → `openapi-fetch`, with a CI drift check.
-- **Chat**: v0 request/response (no streaming), backend-owned approval state machine.
-  The React panel renders `ChatSessionView` and relays decisions with the version it
-  rendered, so double clicks and second tabs get the server's stale-form answer.
+- **Chat**: request/response (no streaming), backend-owned approval state machine
+  (§8.2). The React panel relays decisions with the version it rendered, so stale
+  approvals are rejected server-side.
 - **Sync** (`POST /api/sync`): Gmail `history.list` from `last_history_id` → group by
   thread → per thread: extract → validate → reconcile → persist (capped per run).
 - **Extraction**: one structured LLM call per thread; Validate checks evidence quotes
@@ -55,42 +64,14 @@ src/email_task_agent/
   app/api.py           JSON API (the frontend contract)
   app/main.py          app factory + default wiring
   demo/seed.py         idempotent demo seeding from checked-in suites
-  evals/               E1 scorer/gate/runner, E2 recorded 100%, E1-U wrong links
   synth/               label-first synthetic suites
 scripts/export_openapi.py   regenerates web/openapi.json (CI drift check)
 web/                   Next.js 16 app (server components + server actions)
 evals/data|baselines/  generated suites + pinned baselines (checked in)
 tests/                 unit + API + 9 Next.js e2e (Playwright vs next start)
-deploy/                Dockerfiles for the deployed instances
+deploy/                HF Space image + entrypoint (the public demo)
+docs/                  supplementary notes (future plan)
 ```
-
-## Deployment (Hugging Face Space)
-
-The public demo is **one HF Space running everything in a single container**: an
-embedded Postgres (initialized by `deploy/space-entrypoint.sh`), FastAPI on
-`127.0.0.1:8000`, and Next.js on `0.0.0.0:7860` (`deploy/hf-space.Dockerfile`, Docker
-SDK, `app_port: 7860`; `/healthz` and `/api/*` are proxied through Next.js to the
-backend).
-
-- Space secrets/variables: `HF_TOKEN` (chat primary), `OR_API_KEY` (chat failover),
-  `INSTANCE_MODE=demo`. **No external database**: the demo holds its synthetic data
-  (D8) in the embedded Postgres, so there is no pooler to deregister and nothing to
-  pause or wake — a container restart just reseeds it. Boot never blocks on the
-  database either: migrate+seed run in a retrying background thread (pages render the
-  offline banner until they land, then self-heal).
-- Chat is capped at `DEMO_DAILY_TURN_CAP` (100) turns/day across all visitors; writes
-  stay stubbed in demo mode.
-- Rebuild locally first (`docker build -f deploy/hf-space.Dockerfile .`) — the image is
-  self-contained and starts all three processes; then upload the staging tree with
-  `huggingface_hub.upload_folder`. A private instance is the same image pointed at a
-  managed Postgres (`DATABASE_URL`) plus the Gmail token (`GMAIL_TOKEN_JSON`) — see
-  `.env.example` for the pooler caveats.
-
-Local two-process development: backend `:8000`, frontend `:3000` (Quickstart). Without
-env vars the backend still starts the keyless in-memory demo. A private instance is the
-same container plus `DATABASE_URL`, `INSTANCE_MODE=private` and the Gmail token
-(`scripts/auth_gmail.py` once locally, then paste the file contents into the
-`GMAIL_TOKEN_JSON` env var — host filesystems are ephemeral).
 
 ## Quickstart (two processes)
 
@@ -112,8 +93,8 @@ router (primary), and `OR_API_KEY` → **deepseek/deepseek-v4.1-flash-1017** (Op
 as **runtime failover** — a provider-level failure on HF (throttled, out of credits,
 down) retries that same request on OpenRouter automatically. Tool errors and malformed
 requests are never retried on the fallback (they are our bug, not the provider's).
-(demo writes stay stubbed; the demo chat is capped at 100 turns/day — plan §11).
-Private instance: set `DATABASE_URL`, run `python scripts/auth_gmail.py`, press *Sync now*.
+Demo-mode writes stay stubbed. Private instance: set `DATABASE_URL`, run
+`python scripts/auth_gmail.py`, press *Sync now*.
 
 ### Where to put the API key
 
@@ -129,24 +110,34 @@ DATABASE_URL=postgresql://...                  # any managed Postgres; without i
 INSTANCE_MODE=private                          # only meaningful with DATABASE_URL
 ```
 
-**DATABASE_URL works with Neon, Supabase, Render, or Railway** — plain SQL, standard
-Postgres features, pooling-safe connections. Exact strings (plus examples) are in
-`.env.example`; e.g. Supabase: Project → Connect → *Session pooler*, and append
-`?sslmode=require`. Migrations apply automatically when the backend starts.
+`DATABASE_URL` accepts any standard Postgres (Neon, Supabase, Render, Railway all
+work); exact connection strings and pooler notes are in `.env.example`. Migrations
+apply automatically when the backend starts. Restart the backend after editing `.env`.
 
-Restart the backend after editing `.env`; the chat page then runs on the live model.
+## Deployment (Hugging Face Space)
 
-> **Private-instance security**: the dev scripts bind to `127.0.0.1` on purpose, and the
-> backend is reachable only server-side. Before ever exposing the private instance to a
-> network, add authentication; on a shared network another machine could otherwise call
-> server actions (read tasks, approve drafts). The public demo (synthetic data only) is
-> protected against unbounded LLM spend by the daily turn cap — put a spend limit at the
-> provider too.
+The public demo is **one HF Space running everything in a single container**: an
+embedded Postgres (initialized by `deploy/space-entrypoint.sh`), FastAPI on
+`127.0.0.1:8000`, and Next.js on `0.0.0.0:7860` (`deploy/hf-space.Dockerfile`, Docker
+SDK, `app_port: 7860`; `/healthz` and `/api/*` are proxied through Next.js to the
+backend).
+
+- Space secrets/variables: `HF_TOKEN` (chat primary), `OR_API_KEY` (chat failover),
+  `INSTANCE_MODE=demo`. **No external database**: the demo holds its synthetic data
+  (D8) in the embedded Postgres, and boot never blocks on it — migrate+seed run in a
+  retrying background thread (pages render an offline banner until they land, then
+  self-heal).
+- Chat is capped at `DEMO_DAILY_TURN_CAP` (100) turns/day across all visitors; writes
+  stay stubbed in demo mode.
+- The image is self-contained — verify changes locally with
+  `docker build -f deploy/hf-space.Dockerfile .` before pushing to the Space.
+- A private instance is the same image pointed at a managed Postgres (`DATABASE_URL`)
+  plus the Gmail token (`GMAIL_TOKEN_JSON`) — see `.env.example`.
 
 ## Checks
 
 ```bash
-uv run pytest                                       # 132 tests incl. 9 Next.js e2e
+uv run pytest                                       # 135 tests incl. 9 Next.js e2e
 uv run ruff check .
 npm --prefix web run typecheck                      # tsc --noEmit
 npm --prefix web run build                          # production build (e2e needs it)
@@ -158,42 +149,12 @@ uv run python -m email_task_agent.evals.e2          # E2: 8/8 recorded scenarios
 uv run python -m email_task_agent.evals.e1u         # E1-U wrong-link harness
 ```
 
-## E1 eval workflow (§9.3)
+E1 baselines are versioned code (`SCORER_VERSION`): re-record with
+`--record-baseline evals/baselines/e1_baseline.json`, gate with
+`--gate evals/baselines/e1_baseline.json` (exit 1 = regression). Changes to matching,
+normalization, or thresholds bump the version and re-record in the same PR.
 
-```bash
-uv run python -m email_task_agent.evals.e1 --predictions run.json --runs 3 \
-    --record-baseline evals/baselines/e1_baseline.json
-uv run python -m email_task_agent.evals.e1 --predictions run.json --runs 3 \
-    --gate evals/baselines/e1_baseline.json     # exit 1 = regression
-```
+## Future plan
 
-Scorer and gate are **versioned code** (`SCORER_VERSION`): changes to matching,
-normalization, or thresholds are a spec change — bump the version, re-record, say so in
-the PR. Task scope for gold labeling (§9.2): a task counts when the mailbox owner owns
-it or asked someone for it.
-
-## Status / milestones
-
-- [x] **M0**: schema, evidence module, E1 scorer + gate + runner, label-first suites.
-- [x] **M1**: approval flow (§8.2) with Playwright proofs, Gmail sync, extraction,
-      reconciliation, task/calendar/chat UI, E2 + E1-U harnesses, CI, container image.
-- [x] **Frontend migration**: Jinja/HTMX → Next.js 16 (JSON API + typed client + server
-      actions; HTML routes, templates and jinja2 removed after e2e went green).
-- [x] **Deploy**: public demo live on Hugging Face Spaces as one all-in-one container
-      (embedded Postgres + backend + frontend; real-model chat with failover, capped).
-- [ ] **M2**: grow E1 to 40 threads (~100 gold with the private golden set), real-model
-      baseline + D3 bake-off, E3/E4 agent evals, Gmail/Calendar/Tasks end-to-end on the
-      private instance.
-
-## Honest deviations from the plan
-
-- **Calendar**: custom month grid (~40 lines TS) instead of FullCalendar — v7's package
-  split is currently mismatched; revisit when `@fullcalendar/daygrid` catches up.
-- **Auth deferred** for single-user instances; the public demo holds synthetic data only
-  (D8). The unauthenticated demo backend is acceptable because it holds no real data;
-  later, a private host with IAM and an ID token from the Next.js server closes that.
-- **At-most-once external writes**: the `actions` row flips to `approved` immediately
-  before the external call, so a crash in that window makes the retry *refuse to resend*.
-  Possibly-skipped beats possibly-duplicated.
-- **Streaming**: out of scope for the migration (plan §9); each chat turn is
-  request/response, and the run-scoped event log + SSE design is unchanged future work.
+Roadmap and known limitations (including honest deviations from the plan) live in
+[docs/FUTURE_PLAN.md](docs/FUTURE_PLAN.md).

@@ -1,0 +1,22 @@
+# Render blueprint: deploys the FastAPI backend as a Docker web service.
+# In Render: New + -> Blueprint -> pick this repo -> it reads this file.
+# Set the sync:false variables in the dashboard when prompted.
+
+services:
+  - type: web
+    name: email-task-agent-backend
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: INSTANCE_MODE
+        value: demo # public demo: synthetic data only, writes stubbed
+      - key: DATABASE_URL
+        sync: false # demo Supabase project (Session pooler string, +sslmode=require)
+      - key: OR_API_KEY
+        sync: false # optional: real-model chat on the demo (100 turns/day cap); omit for scripted mock
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ZAI_API_KEY
+        sync: false
+      # NEVER set GMAIL_TOKEN_JSON or credentials.json on the public demo.

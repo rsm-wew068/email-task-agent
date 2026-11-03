@@ -188,7 +188,8 @@ def test_suggestion_reject_clears_queue():
     assert client.get("/api/tasks").json()["suggestions"]
     response = client.post(f"/api/suggestions/{suggestion_id}/reject", json={})
     assert response.status_code == 200 and response.json()["ok"] is True
-    assert client.get("/api/tasks").json()["suggestions"] == []
+    remaining = {s.id for s in store.pending_suggestions()}
+    assert suggestion_id not in remaining  # ours decided (the seeded review demo may still be pending)
 
 
 def test_suggestion_accept_merges():

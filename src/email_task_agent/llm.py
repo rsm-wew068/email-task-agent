@@ -4,6 +4,7 @@ Provider = first key present in order GEMINI_API_KEY -> ZAI_API_KEY ->
 LLM_API_KEY -> OPENAI_API_KEY. Explicit LLM_BASE_URL / CHAT_MODEL /
 EXTRACTION_MODEL always beat the provider defaults.
 
+  OR_API_KEY     -> OpenRouter, deepseek/deepseek-v4.1-flash-1017
   GEMINI_API_KEY -> Google AI Studio's OpenAI-compatible endpoint, gemini-3.8-flash
   ZAI_API_KEY    -> Z.ai (GLM), glm-5.3-flash
   LLM_API_KEY    -> whatever LLM_BASE_URL points at (set CHAT_MODEL too)
@@ -22,6 +23,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from email_task_agent.config import Settings, settings
 
+_OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/"
 _ZAI_BASE = "https://api.z.ai/api/paas/v4/"
 
@@ -32,6 +34,12 @@ def resolve_provider(s: Settings | None = None) -> tuple[str, str, str]:
     Explicit LLM_BASE_URL / CHAT_MODEL always override provider defaults.
     """
     s = s or settings()
+    if s.or_api_key:
+        return (
+            s.llm_base_url or _OPENROUTER_BASE,
+            s.or_api_key,
+            s.chat_model or "deepseek/deepseek-v4.1-flash-1017",
+        )
     if s.gemini_api_key:
         return (s.llm_base_url or _GEMINI_BASE), s.gemini_api_key, s.chat_model or "gemini-3.8-flash"
     if s.zai_api_key or s.llm_api_key:
@@ -41,7 +49,7 @@ def resolve_provider(s: Settings | None = None) -> tuple[str, str, str]:
         if not s.llm_base_url or not s.chat_model:
             raise RuntimeError("OPENAI_API_KEY needs LLM_BASE_URL and CHAT_MODEL set in .env")
         return s.llm_base_url, s.openai_api_key, s.chat_model
-    raise RuntimeError("no LLM key configured (set GEMINI_API_KEY or ZAI_API_KEY in .env)")
+    raise RuntimeError("no LLM key configured (set OR_API_KEY, GEMINI_API_KEY or ZAI_API_KEY in .env)")
 
 
 def build_model(model_name: str | None = None) -> Model:

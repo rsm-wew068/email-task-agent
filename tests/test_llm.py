@@ -21,6 +21,17 @@ def test_zai_key_selects_zai_endpoint():
     assert key == "z-key" and model == "glm-5.3-flash"
 
 
+def test_openrouter_key_selects_openrouter_and_deepseek():
+    base, key, model = resolve_provider(Settings(or_api_key="o-key"))
+    assert base == "https://openrouter.ai/api/v1"
+    assert key == "o-key" and model == "deepseek/deepseek-v4.1-flash-1017"
+
+
+def test_openrouter_wins_when_both_present():
+    _, key, model = resolve_provider(Settings(or_api_key="o", zai_api_key="z"))
+    assert key == "o" and model == "deepseek/deepseek-v4.1-flash-1017"
+
+
 def test_gemini_wins_when_both_present():
     _, key, model = resolve_provider(Settings(gemini_api_key="g", zai_api_key="z"))
     assert key == "g" and model == "gemini-3.8-flash"

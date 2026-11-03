@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # LLM provider keys — the first present one selects the provider (plan D3;
     # bake-off can override with LLM_BASE_URL / CHAT_MODEL / EXTRACTION_MODEL).
+    or_api_key: str | None = None  # OpenRouter (e.g. deepseek/deepseek-v4.1-flash-1017)
     gemini_api_key: str | None = None  # Google AI Studio; OpenAI-compatible endpoint
     zai_api_key: str | None = None  # Z.ai (GLM)
     llm_api_key: str | None = None  # generic alias, pairs with LLM_BASE_URL
@@ -27,7 +28,7 @@ class Settings(BaseSettings):
 
     @property
     def api_key(self) -> str | None:
-        return self.llm_api_key or self.zai_api_key or self.gemini_api_key or self.openai_api_key
+        return self.or_api_key or self.gemini_api_key or self.llm_api_key or self.zai_api_key or self.openai_api_key
 
 
 @lru_cache

@@ -1,4 +1,4 @@
-"""E1 regression gate (plan §9.3).
+"""E1 regression gate.
 
 The gate fails if any gate metric drops by more than
     max(MIN_DROP_POINTS, 2 * baseline run-to-run std)

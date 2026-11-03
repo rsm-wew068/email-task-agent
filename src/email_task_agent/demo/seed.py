@@ -1,4 +1,4 @@
-"""Demo instance seeding (D8): synthetic mailbox only, never real mail.
+"""Demo instance seeding: synthetic mailbox only, never real mail.
 
 Loads the checked-in suites (evals/data/) into any Store:
   - demo_mailbox.json threads -> threads + messages + cached_text;

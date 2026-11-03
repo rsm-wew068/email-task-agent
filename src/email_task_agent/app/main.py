@@ -1,4 +1,4 @@
-"""FastAPI backend: /healthz + the JSON API under /api (migration §2).
+"""FastAPI backend: /healthz + the JSON API under /api.
 
 The browser never talks to this app — the Next.js server calls it server-side
 via BACKEND_URL. Dependency injection keeps everything testable: create_app()
@@ -73,7 +73,7 @@ def build_default_app() -> FastAPI:
     """Neon + a configured LLM when present; otherwise an in-memory seeded demo.
 
     Without DATABASE_URL an instance cannot be the real private one, so the
-    effective mode downgrades to "demo" regardless of INSTANCE_MODE (D8: demo
+    effective mode downgrades to "demo" regardless of INSTANCE_MODE (demo
     holds synthetic data only; the badge reflects what is actually wired).
     """
     from email_task_agent.config import settings
@@ -113,7 +113,7 @@ def build_default_app() -> FastAPI:
     if settings().api_key:
         from email_task_agent.llm import model_for_purpose, openrouter_fallback
 
-        # Demo spend control (plan §11: 100 turns/day); unlimited when private.
+        # Demo spend control (100 turns/day); unlimited when private.
         cap = settings().demo_daily_turn_cap if mode == "demo" else None
         chat_service = ChatService(
             store,

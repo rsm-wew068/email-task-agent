@@ -1,4 +1,4 @@
-"""Structured extraction output (plan §7 Extract stage).
+"""Structured extraction output (Extract stage).
 
 This is the ``output_type=ThreadExtraction`` contract for the Pydantic AI
 extraction agent: new tasks and updates, each anchored to an evidence quote
@@ -25,7 +25,7 @@ class NewTask(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    # §7.3: updates must reference one of the task IDs shown in the Extract
+    # Updates must reference one of the task IDs shown in the Extract
     # context, citing a sentence from a NEW email. The Validate stage checks
     # both; reconciliation links updates by this ID, never by title similarity.
     ref_task_id: int

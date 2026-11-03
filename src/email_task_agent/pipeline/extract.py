@@ -1,7 +1,7 @@
-"""Extract stage (§7): one structured LLM call per thread.
+"""Extract stage: one structured LLM call per thread.
 
 The agent's ``output_type`` is ThreadExtraction. The prompt puts the WHOLE
-thread in context (rev 3 decision: no retrieval chunks), labels the mailbox
+thread in context (no retrieval chunks), labels the mailbox
 owner's identity, lists the open tasks whose IDs updates may reference, and
 states the E1 task-scope rule so extraction matches the labeling conventions.
 

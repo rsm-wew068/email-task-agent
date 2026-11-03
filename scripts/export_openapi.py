@@ -1,4 +1,4 @@
-"""Export the OpenAPI schema for the Next.js typed client (migration §3.3).
+"""Export the OpenAPI schema for the Next.js typed client.
 
 Writes web/openapi.json from create_app(Deps(MemoryStore(), ...)) — routes are
 registered unconditionally, so the schema doesn't depend on wiring. Keys are

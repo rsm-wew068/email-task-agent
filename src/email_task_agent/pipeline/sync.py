@@ -1,4 +1,4 @@
-"""Sync service (plan §5): history.list -> group -> per thread pipeline.
+"""Sync service: history.list -> group -> per thread pipeline.
 
 Steps per the plan:
   1. history.list from the stored last_history_id; on HTTP 404 (history
@@ -101,7 +101,7 @@ class SyncService:
             outcome = self._process_thread(sync_thread)
             outcomes.append(outcome)
 
-        # Advance sync_state only past processed threads (§5 step 4); the rest
+        # Advance sync_state only past processed threads; the rest
         # reappear on the next run.
         processed_ids = {t.gmail_thread_id for t in result.threads[: self.cap]}
         latest_processed = next(
@@ -174,7 +174,7 @@ class SyncService:
 
 
 def reextract_thread(store: Store, client: GmailClientProtocol, extract_fn, *, owner_email: str, gmail_thread_id: str) -> SyncOutcome:
-    """Manual re-extract (rev 5 §7.3 cost of design): reset processed marks so
+    """Manual re-extract: reset processed marks so
     the whole thread is treated as new, then run the standard pipeline."""
     service = SyncService(store, client, extract_fn, owner_email=owner_email, cap_per_run=1)
     thread = client.fetch_single(gmail_thread_id)

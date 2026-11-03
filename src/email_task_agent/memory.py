@@ -73,7 +73,7 @@ class _Action:
 
 
 class MemoryStore:
-    """Mirrors every Store method, including the §8.2 version-checked CAS."""
+    """Mirrors every Store method, including the version-checked CAS."""
 
     def __init__(self) -> None:
         self.people: dict[str, _Person] = {}

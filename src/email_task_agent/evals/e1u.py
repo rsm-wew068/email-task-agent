@@ -1,4 +1,4 @@
-"""E1-U eval harness (plan §9, rev 5): wrong-update-link regression.
+"""E1-U eval harness: wrong-update-link regression.
 
 Feeds emails one at a time through validate+reconcile and counts links the
 extractor got wrong (an update attached to a task other than the scenario's
@@ -85,8 +85,8 @@ def run_scenario(scenario: WrongLinkScenario, extract_fn) -> int:
 
 def scripted_extractor(variant: str):
     """Scripted 'model': variant 'perfect' links correctly; 'wrong' attaches
-    updates to the first shown task. Stands in for the real model until the
-    D3 bake-off pins one."""
+    updates to the first shown task. Stands in for the real model until a
+    bake-off pins one."""
 
     def extract(scenario: WrongLinkScenario, inp: ThreadInput) -> ThreadExtraction:
         if variant == "perfect":

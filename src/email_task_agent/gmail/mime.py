@@ -1,4 +1,4 @@
-"""MIME -> clean thread text (Load stage, §7): MIME to text, strip quoted
+"""MIME -> clean thread text (Load stage): MIME to text, strip quoted
 replies and signatures, keep bodies bounded."""
 
 from __future__ import annotations

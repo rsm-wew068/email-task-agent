@@ -1,4 +1,4 @@
-"""Frozen evidence machinery (§9.3): normalization, location, overlap."""
+"""Frozen evidence machinery: normalization, location, overlap."""
 
 from __future__ import annotations
 

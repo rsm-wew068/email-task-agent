@@ -1,4 +1,4 @@
-"""Chat state machine (§8.2) with scripted FunctionModel agents: approve,
+"""Chat state machine with scripted FunctionModel agents: approve,
 deny, double-submit staleness, two actions in one turn, crash-after-call
 retry idempotency."""
 

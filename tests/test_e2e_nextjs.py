@@ -1,7 +1,7 @@
-"""E2E (migration plan §6.2): Python Playwright against the Next.js production
+"""E2E: Python Playwright against the Next.js production
 build via `next start`. The browser only ever sees the Next.js origin; the
 backend (uvicorn + a swappable ASGI shim) is reached server-side through
-BACKEND_URL. Nine scenarios cover §8.2 parity plus the tasks/calendar pages.
+BACKEND_URL. Nine scenarios cover the chat state machine plus the tasks/calendar pages.
 
 Skips (module-level, not a failure) when Node or the production build is
 missing; CI always builds before pytest.
@@ -293,7 +293,7 @@ def test_two_actions_approve_one_deny_one(page):
     executed = [store.action_get(i) for i in store.actions]
     assert len(executed) == 1
     assert executed[0]["status"] == "executed"
-    assert executed[0]["kind"] == "create_gmail_draft"  # §8.2: approved tool's args
+    assert executed[0]["kind"] == "create_gmail_draft"  # approved tool's args
 
 
 def test_crash_after_api_call_retry_never_sends_twice(page):

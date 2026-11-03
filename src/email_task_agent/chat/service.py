@@ -1,4 +1,4 @@
-"""Chat turn orchestration (§8.2): four-state machine, version-checked CAS,
+"""Chat turn orchestration: four-state machine, version-checked CAS,
 approve/deny only, idempotent external writes (the tools own the actions gate).
 
 v0 has no streaming: each turn is a request/response; the UI shows a spinner.
@@ -57,7 +57,7 @@ class ChatService:
         self.me = me
         self.gmail = gmail
         self.agent = agent or build_chat_agent(model)
-        # Demo spend control (plan §11): None disables the cap (private instance).
+        # Demo spend cap: None disables it (private instance).
         self.daily_turn_cap = daily_turn_cap
         self.fallback_model = fallback_model
 

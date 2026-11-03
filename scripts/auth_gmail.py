@@ -5,8 +5,7 @@
      (Desktop app type) and save as ./credentials.json — gitignored.
   2. uv run python scripts/auth_gmail.py   # opens a browser for consent
   3. token.json (gitignored) now holds the refresh token. Keep it out of the
-     repo and out of any deployed image (plan §6: local file, secret manager
-     if deployed).
+     repo and out of any deployed image (gitignored; a secret manager if deployed).
 """
 
 from __future__ import annotations

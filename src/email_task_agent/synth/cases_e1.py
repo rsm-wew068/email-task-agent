@@ -1,9 +1,9 @@
-"""Starter E1 case set (label-first). Target per §9.3: 40 synthetic threads in
+"""Starter E1 case set (label-first). Target: 40 synthetic threads in
 the test split (~100 gold tasks with the private golden set); this starter set
 proves the harness end to end and seeds the case matrix. Grow by adding
 ThreadSpecs — the self-consistency test keeps authoring honest.
 
-Default task scope (rev 5 decision, §9.2): a task is in scope when the mailbox
+Default task scope: a task is in scope when the mailbox
 owner owns it or asked someone for it. Threads where others are assigned work
 while the owner is merely CC'd have EMPTY gold — they test the scope boundary.
 
@@ -156,7 +156,7 @@ def build_cases() -> list[ThreadSpec]:
                 )
             ],
         ),
-        # 6. Two different tasks stated in one sentence — both survive (rev 5 §7.3).
+        # 6. Two different tasks stated in one sentence — both survive.
         ThreadSpec(
             thread_id="e1-006-two-tasks-one-sentence",
             tags=["multi-task", "one-sentence"],
@@ -322,7 +322,7 @@ def build_cases() -> list[ThreadSpec]:
                 )
             ],
         ),
-        # 11. Recurring task — one gold task for the first instance (§7.3: instances
+        # 11. Recurring task — one gold task for the first instance (instances
         # more than 7 days apart are never duplicate-suggested; that's E2 territory).
         ThreadSpec(
             thread_id="e1-011-recurring-standup-notes",

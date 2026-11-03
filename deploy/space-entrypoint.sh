@@ -1,6 +1,6 @@
 #!/bin/sh
 # Space entrypoint: embedded demo Postgres + FastAPI + Next.js in one container.
-# The demo database lives INSIDE the container (synthetic data only, D8) — no
+# The demo database lives INSIDE the container (synthetic data only) — no
 # external database dependency, so nothing can deregister or throttle us.
 # A container restart re-initializes it; seeding is idempotent.
 set -e
@@ -12,8 +12,9 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
   rm -rf "$PGDATA"
   mkdir -p "$PGDATA"
   chown postgres:postgres "$PGDATA"
-  # -E UTF8 + --no-locale: migrations contain § comments; the container default
-  # locale would initdb a SQL_ASCII cluster and psycopg refuses to encode them.
+  # -E UTF8 + --no-locale: the seeded mailbox text is not pure ASCII; the
+  # container default locale would initdb a SQL_ASCII cluster, and psycopg
+  # refuses to encode non-ASCII into it.
   su postgres -s /bin/sh -c "$BIN/initdb -D $PGDATA -U postgres -A trust -E UTF8 --no-locale" >/dev/null
 fi
 su postgres -s /bin/sh -c "$BIN/pg_ctl -D $PGDATA -l /tmp/pg.log -o '-c listen_addresses=127.0.0.1' start" >/dev/null

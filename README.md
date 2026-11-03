@@ -24,7 +24,7 @@ OpenRouter when HF throttles or runs out of credits. Capped at 100 turns/day.
 ```
 Browser ──(pages + server actions)──▶ Next.js 16 (web/) ──(typed fetch, BACKEND_URL)──▶ FastAPI /api/*
                                                                             ├── Store: Postgres | in-memory demo
-                                                                            ├── ChatService: §8.2 state machine
+                                                                            ├── ChatService: approval state machine
                                                                             └── Gmail / Calendar / Tasks via approved tools
 ```
 
@@ -34,33 +34,32 @@ Browser ──(pages + server actions)──▶ Next.js 16 (web/) ──(typed f
 - **Frontend**: Next.js 16 App Router in `web/` — server components read, server actions
   write, Tailwind 4. Contract: FastAPI response models → `openapi.json` →
   `openapi-typescript` → `openapi-fetch`, with a CI drift check.
-- **Chat**: request/response (no streaming), backend-owned approval state machine
-  (§8.2). The React panel relays decisions with the version it rendered, so stale
+- **Chat**: request/response (no streaming), backend-owned approval state machine. The React panel relays decisions with the version it rendered, so stale
   approvals are rejected server-side.
 - **Sync** (`POST /api/sync`): Gmail `history.list` from `last_history_id` → group by
   thread → per thread: extract → validate → reconcile → persist (capped per run).
 - **Extraction**: one structured LLM call per thread; Validate checks evidence quotes
   against thread text (frozen `evidence.py`, shared with the E1 scorer), owner ∈
   participants, due date parses.
-- **Reconciliation** (§7.3): no auto-merge — updates must reference a shown task ID and
+- **Reconciliation**: no auto-merge — updates must reference a shown task ID and
   cite a sentence from a *new* email; duplicates and low-confidence updates become
   suggestions; merges happen only on acceptance and are undoable via split.
-- **Instances** (D8): public demo = synthetic mailbox, write tools stubbed; private =
+- **Instances**: public demo = synthetic mailbox, write tools stubbed; private =
   your Gmail via OAuth, refresh token outside the repo.
 
 ## Layout
 
 ```
-migrations/            plain SQL schema (§6 tables + suggestions + thread_messages)
+migrations/            plain SQL schema + suggestions + thread_messages
 src/email_task_agent/
   evidence.py          frozen quote location + overlap (shared by E1 scorer and Validate)
   models/extraction.py ThreadExtraction contract (Pydantic AI output_type)
-  pipeline/            dates, validate, reconcile (§7.3), extract, sync
+  pipeline/            dates, validate, reconcile, extract, sync
   store.py             SQL store + Store protocol; chat CAS; idempotent actions
   memory.py            in-memory Store twin (tests / keyless demo)
   gmail/               Gmail client (history.list, MIME→text) + OAuth script
   agent/chat.py        tools: SQL reads (auto), update_task (undoable), external writes (requires_approval)
-  chat/service.py      §8.2 four-state machine, version-checked CAS, DeferredToolRequests resume
+  chat/service.py      four-state approval machine, version-checked CAS, DeferredToolRequests resume
   app/api.py           JSON API (the frontend contract)
   app/main.py          app factory + default wiring
   demo/seed.py         idempotent demo seeding from checked-in suites
@@ -103,7 +102,7 @@ Everything lives in **`.env` at the repo root** (gitignored — copy from `.env.
 HF_TOKEN=<your HF access token>               # primary: HF Inference Providers
 OR_API_KEY=<your OpenRouter key>              # failover: used when HF throttles/runs out
 # LLM_BASE_URL=...                            # override endpoint; any OpenAI-compatible host works
-# CHAT_MODEL=...                              # defaults shown; override for the D3 bake-off
+# CHAT_MODEL=...                              # defaults shown; override for a bake-off
 # EXTRACTION_MODEL=...
 DATABASE_URL=postgresql://...                  # any managed Postgres; without it: in-memory demo
 INSTANCE_MODE=private                          # only meaningful with DATABASE_URL
@@ -122,8 +121,7 @@ SDK, `app_port: 7860`; `/healthz` and `/api/*` are proxied through Next.js to th
 backend).
 
 - Space secrets/variables: `HF_TOKEN` (chat primary), `OR_API_KEY` (chat failover),
-  `INSTANCE_MODE=demo`. **No external database**: the demo holds its synthetic data
-  (D8) in the embedded Postgres, and boot never blocks on it — migrate+seed run in a
+  `INSTANCE_MODE=demo`. **No external database**: the demo holds its synthetic data in the embedded Postgres, and boot never blocks on it — migrate+seed run in a
   retrying background thread (pages render an offline banner until they land, then
   self-heal).
 - Chat is capped at `DEMO_DAILY_TURN_CAP` (100) turns/day across all visitors; writes

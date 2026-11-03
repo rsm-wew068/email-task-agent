@@ -1,4 +1,4 @@
-"""Reconcile stage (§7.3, rev 5): no auto-merging, lean against merging.
+"""Reconcile stage: no auto-merging, lean against merging.
 
 Pure function producing persistable ops. Rules:
   - a task whose quote comes from an already-processed email is dropped as a repeat;

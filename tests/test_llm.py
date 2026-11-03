@@ -1,4 +1,4 @@
-"""Provider resolution + failover classification (plan D3): first provider key
+"""Provider resolution + failover classification: first provider key
 present wins (HF primary, OpenRouter second); explicit CHAT_MODEL / LLM_BASE_URL
 override."""
 

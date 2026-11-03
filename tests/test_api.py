@@ -1,5 +1,4 @@
-"""JSON API tests (migration plan §6.1) — replace test_web.py when the HTML
-routes are removed. The API contract is what the Next.js app consumes."""
+"""JSON API tests — the API contract is what the Next.js app consumes."""
 
 from __future__ import annotations
 

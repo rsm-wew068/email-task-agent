@@ -1,4 +1,4 @@
-"""LLM provider resolution + model construction (plan D3; bake-off via env).
+"""LLM provider resolution + model construction (bake-off via env).
 
 Primary = HF Inference Providers (HF_TOKEN) → OpenRouter (OR_API_KEY). The
 non-primary key, when present, is the RUNTIME FAILOVER: a provider-level

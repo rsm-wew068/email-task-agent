@@ -1,4 +1,4 @@
-"""E1 scorer and gate unit tests — pin the frozen §9.3 behavior."""
+"""E1 scorer and gate unit tests — pin the frozen scorer behavior."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def test_perfect_prediction_matches() -> None:
 
 
 def test_wrong_owner_is_match_with_field_error_not_fp_fn() -> None:
-    # §9.3: owner is not part of the match; a wrong owner is one matched pair with owner_ok=False.
+    # Owner is not part of the match; a wrong owner is one matched pair with owner_ok=False.
     ts = score_thread("t1", [gold()], [pred(owner="tom@x.example")], TEXT)
     assert ts.tp == 1 and ts.fp == 0 and ts.fn == 0
     assert ts.matches[0].owner_ok is False

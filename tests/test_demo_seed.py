@@ -1,4 +1,4 @@
-"""Demo seeding (D8): all gold tasks land, seeding is idempotent per thread."""
+"""Demo seeding: all gold tasks land, seeding is idempotent per thread."""
 
 from __future__ import annotations
 

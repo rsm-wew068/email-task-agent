@@ -1,4 +1,4 @@
-"""Evidence-quote machinery — the frozen core of the E1 spec (plan §9.3).
+"""Evidence-quote machinery — the frozen core of the E1 spec.
 
 The E1 eval scorer (evals/scoring.py) and the runtime Validate stage (pipeline,
 M1) MUST both use these functions, so eval and runtime can never drift.
@@ -9,8 +9,8 @@ evals.scoring.SCORER_VERSION and re-record the baseline.
 Pinned choices (v1):
   - fuzzy location: rapidfuzz ``fuzz.partial_ratio_alignment`` at >= 90/100
   - overlap: token-set intersection over the shorter side, >= 0.5
-  - quotes under 3 tokens are rejected (rev 5 review note: a 1-2 token quote
-    can anchor a match on almost any sentence)
+  - quotes under 3 tokens are rejected (a 1-2 token quote can anchor a match
+    on almost any sentence)
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ class QuoteLocation:
 def locate_quote(quote: str, email_text: str) -> QuoteLocation | None:
     """Find ``quote`` inside ``email_text``, exactly or fuzzily (>= 90/100).
 
-    Returns None when the quote cannot be found — per §9.3 such a prediction
+    Returns None when the quote cannot be found — such a prediction
     is a false positive and must never be matched to a gold task.
     """
     q = normalize(quote)

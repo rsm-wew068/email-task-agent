@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     database_url: str | None = None
-    instance_mode: str = "private"  # private | demo (D8: demo never holds real mail)
+    instance_mode: str = "private"  # private | demo (demo never holds real mail)
 
     # LLM providers: HF Inference Providers primary, OpenRouter failover — a
     # provider-level error (throttled, out of credits, down) on the primary
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     chat_model: str | None = None  # explicit model override
     extraction_model: str | None = None
 
-    # Demo spend cap: max LLM chat turns per calendar day (plan §11).
+    # Demo spend cap: max LLM chat turns per calendar day.
     demo_daily_turn_cap: int = 100
 
     @property

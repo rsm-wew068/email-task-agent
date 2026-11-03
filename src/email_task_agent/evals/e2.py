@@ -1,9 +1,9 @@
-"""E2 reconciliation eval (plan §9): recorded-output scenarios, must pass 100%.
+"""E2 reconciliation eval: recorded-output scenarios, must pass 100%.
 
 Each scenario declares: initial open tasks, a validated extraction (the
 "recorded output" of the Extract+Validate stages, hand-labeled), processed
 message ids, and the EXACT expected ops reconcile() must produce. No model
-involved — this pins the reconciliation rules of rev 5 §7.3.
+involved — this pins the reconciliation rules.
 
   uv run python -m email_task_agent.evals.e2
 """

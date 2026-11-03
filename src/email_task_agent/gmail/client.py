@@ -2,7 +2,7 @@
 messages.list, prefiltering, and MIME parsing into SyncThread objects.
 
 Scopes are read/write-draft for Gmail plus calendar/tasks; the refresh token
-lives in a local file OUTSIDE the repo (plan §6 note).
+lives in a local file OUTSIDE the repo.
 """
 
 from __future__ import annotations
@@ -169,7 +169,7 @@ class GmailClient:
     # -- chat tool helpers ------------------------------------------------------------
 
     def search(self, query: str, max_results: int = 10) -> list[dict]:
-        """messages.list with q= (§8 search_gmail)."""
+        """messages.list with q= (the chat agent's search_gmail)."""
         response = self._service.users().messages().list(userId="me", q=query, maxResults=max_results).execute()
         results = []
         for item in response.get("messages", []):

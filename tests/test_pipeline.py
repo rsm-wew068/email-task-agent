@@ -1,4 +1,4 @@
-"""Pipeline core tests: date rules, Validate stage, Reconcile (§7.3)."""
+"""Pipeline core tests: date rules, Validate stage, Reconcile."""
 
 from __future__ import annotations
 

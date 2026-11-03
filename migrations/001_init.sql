@@ -1,7 +1,7 @@
--- Data model per plan §6, plus two additions from rev 5:
---   suggestions (§7.3 review queue: possible duplicates, low-confidence updates)
---   thread_messages (§7.3: per-email processed marking, repeat-dropping)
--- Single-user instance: no users table, no row-level security (§6 note).
+-- Data model. Two additions beyond the base tables:
+--   suggestions (review queue: possible duplicates, low-confidence updates)
+--   thread_messages (per-email processed marking, repeat-dropping)
+-- Single-user instance: no users table, no row-level security.
 
 create table sync_state (
     id                integer primary key default 1 check (id = 1),  -- single row
@@ -28,7 +28,7 @@ create table threads (
 );
 
 -- One row per message seen in a thread. processed_at null = new/unprocessed.
--- Reconciliation drops extraction quotes sourced from already-processed messages (§7.3).
+-- Reconciliation drops extraction quotes sourced from already-processed messages.
 create table thread_messages (
     gmail_message_id text primary key,
     thread_id        bigint not null references threads(id) on delete cascade,
@@ -68,7 +68,7 @@ create table task_sources (
 );
 create index task_sources_task_idx on task_sources(task_id);
 
--- The temporal view (§2.1): append-only log of what changed, when, from which message.
+-- The temporal view: append-only log of what changed, when, from which message.
 create table task_events (
     id                bigint generated always as identity primary key,
     task_id           bigint not null references tasks(id) on delete cascade,
@@ -81,8 +81,8 @@ create table task_events (
 );
 create index task_events_task_idx on task_events(task_id, at);
 
--- Audit log of proposed and executed writes (§6). tool_call_id is the idempotency key
--- from rev 5 §8.2: recorded before the external call, so a retry never sends twice.
+-- Audit log of proposed and executed writes. tool_call_id is the idempotency key:
+-- recorded before the external call, so a retry never sends twice.
 create table actions (
     id           bigint generated always as identity primary key,
     kind         text not null,  -- create_gmail_draft | create_calendar_event | create_google_task
@@ -95,7 +95,7 @@ create table actions (
     updated_at   timestamptz not null default now()
 );
 
--- Chat state (§6 + rev 5 §8.2): four-state machine with version-checked transitions.
+-- Chat state: four-state machine with version-checked transitions.
 create table chat_sessions (
     id                bigint generated always as identity primary key,
     messages          jsonb not null default '[]',   -- Pydantic AI message history
@@ -107,7 +107,7 @@ create table chat_sessions (
     updated_at        timestamptz not null default now()
 );
 
--- Review queue (rev 5 §7.3): suggestions never auto-apply; merges happen only on accept.
+-- Review queue: suggestions never auto-apply; merges happen only on accept.
 create table suggestions (
     id            bigint generated always as identity primary key,
     kind          text not null,  -- possible_duplicate | low_confidence_done | ...
@@ -120,7 +120,7 @@ create table suggestions (
     decided_at    timestamptz
 );
 
--- Full-text search backing search_tasks(query, ...) (§8): plain SQL, no pgvector (§2.2).
+-- Full-text search backing search_tasks(query, ...): plain SQL, no pgvector.
 alter table tasks
     add column search tsvector
     generated always as (to_tsvector('english', coalesce(title, ''))) stored;

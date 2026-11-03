@@ -128,7 +128,7 @@ class Store(Protocol):
         """LLM chat turns recorded today (demo spend cap)."""
     def record_chat_turn(self) -> None: ...
 
-    # -- chat (§8.2 state machine) -------------------------------------------------
+    # -- chat state machine -------------------------------------------------
     def chat_create(self) -> int: ...
     def chat_get(self, session_id: int) -> ChatSessionRow | None: ...
     def chat_cas(
@@ -223,7 +223,7 @@ def upsert_message(
 
 
 def message_id_sets(conn: psycopg.Connection, thread_db_id: int) -> tuple[set[str], set[str]]:
-    """(processed, unprocessed) message id sets for a thread (§7.3 repeat rules)."""
+    """(processed, unprocessed) message id sets for a thread."""
     with conn.cursor() as cur:
         cur.execute(
             "select gmail_message_id, processed_at is not null from thread_messages where thread_id = %s",
@@ -263,7 +263,7 @@ def tasks_in_thread_db(conn: psycopg.Connection, thread_db_id: int) -> list[Task
 
 def open_tasks_as_existing(conn: psycopg.Connection, participant_emails: list[str]) -> list[ExistingTask]:
     """Open tasks owned by the thread's participants — the task IDs shown to
-    the Extract stage so updates can reference them (§7.3)."""
+    the Extract stage so updates can reference them."""
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -680,7 +680,7 @@ def advance_thread_extraction(conn: psycopg.Connection, thread_db_id: int, histo
     conn.execute("update threads set last_extracted_history_id = %s where id = %s", (history_id, thread_db_id))
 
 
-# -- chat sessions + actions (§8.2) ---------------------------------------------
+# -- chat sessions + actions ---------------------------------------------
 
 
 def chat_create_db(conn: psycopg.Connection) -> int:
@@ -955,7 +955,7 @@ def persist_synced_thread(
     new_message_ids: list[str],
     history_id: str | None,
 ) -> list[int]:
-    """One transaction per thread (§7 Persist): ops + processed marks + history."""
+    """One transaction per thread: ops + processed marks + history."""
     inserted = apply_reconcile_output(conn, output, thread_db_id)
     mark_messages_processed(conn, new_message_ids)
     if history_id:

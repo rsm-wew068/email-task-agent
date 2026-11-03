@@ -1,7 +1,6 @@
-"""Due-date resolution (Validate stage input, §7).
+"""Due-date resolution (Validate stage input).
 
-Rule-based and deterministic — the same rules the E1 labeling conventions use
-(§9.2), so gold labels and runtime behavior agree:
+Rule-based and deterministic — the same rules the E1 labeling conventions use, so gold labels and runtime behavior agree:
 
   anchored to the email's date:
     "friday"                 -> the coming Friday (anchor excluded)

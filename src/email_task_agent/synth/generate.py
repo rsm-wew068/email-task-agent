@@ -1,4 +1,4 @@
-"""Label-first synthetic thread generation (plan §9, rev 2 §5.3 style).
+"""Label-first synthetic thread generation.
 
 Gold tasks are DECLARED FIRST with their evidence sentences; email bodies are
 written around them so every evidence sentence appears verbatim (the

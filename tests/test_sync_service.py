@@ -98,7 +98,7 @@ def test_full_sync_then_incremental_and_repeat_drop(memory_store):
     assert len(memory_store.list_tasks()) == 1
 
     # A NEW message in the same thread, but the extractor (bogus) cites the
-    # already-processed email -> dropped as a repeat (§7.3), no insertion.
+    # already-processed email -> dropped as a repeat, no insertion.
 
     batch = SyncThread(
         gmail_thread_id="t-1",

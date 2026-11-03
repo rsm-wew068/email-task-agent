@@ -1,5 +1,5 @@
-"""Demo-mailbox threads (public demo instance, D8): synthetic persona mailbox,
-dates relative to the seed date. Target per §9: 40-60 threads; these extras
+"""Demo-mailbox threads (public demo instance): synthetic persona mailbox,
+dates relative to the seed date. Target: 40-60 threads; these extras
 join the E1 cases to form the demo suite. No gold — the demo is for browsing
 and E3 agent questions, not for the extraction gate.
 """

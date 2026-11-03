@@ -1,4 +1,4 @@
-"""Validate stage (§7): evidence quotes, participants, parseable dates.
+"""Validate stage: evidence quotes, participants, parseable dates.
 
 Pure functions — no I/O. Every check here is a plan rule:
   - the evidence quote must be locatable in the thread text (uses the frozen
@@ -6,7 +6,7 @@ Pure functions — no I/O. Every check here is a plan rule:
   - a stated owner must be a thread participant (else owner=None + review);
   - a stated due date must parse (else None + review);
   - updates must reference a task ID that was shown in the Extract context
-    and cite a sentence from a NEW email (§7.3).
+    and cite a sentence from a NEW email.
 """
 
 from __future__ import annotations
@@ -119,7 +119,7 @@ def validate_extraction(extraction, inp: ThreadInput) -> ValidatedExtraction:
             out.rejected.append(Rejected("update", label, "unknown_task_ref"))
             continue
         if update.source_message_id not in inp.new_message_ids:
-            # §7.3: updates must cite a NEW email; quotes from already-processed
+            # Updates must cite a NEW email; quotes from already-processed
             # emails are stale by definition.
             out.rejected.append(Rejected("update", label, "stale_email"))
             continue

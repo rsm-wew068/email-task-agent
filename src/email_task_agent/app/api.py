@@ -1,7 +1,7 @@
-"""JSON API for the Next.js frontend (migration plan §3).
+"""JSON API for the Next.js frontend.
 
 The browser never reaches these endpoints directly — the Next.js server calls
-them server-side via BACKEND_URL. Semantics per §3.2:
+them server-side via BACKEND_URL. Semantics:
 
   - Expected chat outcomes are DATA, not HTTP errors: ChatError cases return
     200 with ``error`` set (Next.js redacts thrown server-action errors in
@@ -289,7 +289,7 @@ def build_api_router(deps: Deps) -> APIRouter:
         try:
             result = chat.run_turn(session_id, body.text)
         except ChatError as exc:
-            # Expected outcome as data (§3.2): the UI shows the message and the
+            # Expected outcome as data: the UI shows the message and the
             # server's real current state.
             session = _resolve_session(chat, session_id)
             view = _chat_session_view(session)

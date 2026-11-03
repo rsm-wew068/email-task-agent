@@ -1,4 +1,4 @@
-"""E1 extraction scorer — implements the frozen spec of plan §9.3.
+"""E1 extraction scorer — implements the frozen spec.
 
 Per prediction:
   1. The evidence quote must be locatable in the thread text (exact, or fuzzy
@@ -15,7 +15,7 @@ Per prediction:
   5. Owner, due date and status are scored as accuracy over MATCHED pairs.
      Strict F1 counts a matched task correct only if all three fields agree.
 
-Title and owner are deliberately NOT part of the match (§9.3): titles are
+Title and owner are deliberately NOT part of the match: titles are
 paraphrases, and owner-in-match would turn one wrong owner into both a false
 positive and a miss.
 
@@ -38,9 +38,9 @@ from email_task_agent.evidence import (
     tokenize,
 )
 
-SCORER_VERSION = "e1-spec-v1.1"  # v1 + min-quote-length rule from the rev 5 review
+SCORER_VERSION = "e1-spec-v1.1"  # v1 + min-quote-length rule
 
-# Gate metrics per §9.3; gate thresholds live in evals/gate.py.
+# Gate metrics; gate thresholds live in evals/gate.py.
 GATE_METRICS = ("f1", "strict_f1", "owner_accuracy", "due_accuracy")
 
 
@@ -234,7 +234,7 @@ class ScorerReport:
 
 
 def diff_reports(prev: ScorerReport, curr: ScorerReport) -> dict[str, list]:
-    """Tasks newly missed or newly invented vs a previous report (§9.3 gate output)."""
+    """Tasks newly missed or newly invented vs a previous report (gate output)."""
 
     def key_missed(rep: ScorerReport) -> set:
         return {(t.thread_id, gi) for t in rep.threads for gi in t.missed_gold}

@@ -1,4 +1,4 @@
-"""E1 runner: score extraction predictions against a synthetic suite (§9.3).
+"""E1 runner: score extraction predictions against a synthetic suite.
 
 Usage (from the repo root):
   # Smoke: score the null extractor (predicts nothing) — harness sanity check
@@ -7,7 +7,7 @@ Usage (from the repo root):
   # Score a real extraction run
   uv run python -m email_task_agent.evals.e1 --predictions run.json
 
-  # Record the pinned baseline (3 runs, per §9.3)
+  # Record the pinned baseline (3 runs)
   uv run python -m email_task_agent.evals.e1 --predictions run.json \
       --runs 3 --record-baseline evals/baselines/e1_baseline.json
 
@@ -60,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--suite", default=DEFAULT_SUITE)
     parser.add_argument("--split", default="test", choices=["dev", "test"])
     parser.add_argument("--predictions", help="JSON file of extraction predictions; default: null extractor")
-    parser.add_argument("--runs", type=int, default=1, help="number of eval runs (§9.3: pin 3 for baselines)")
+    parser.add_argument("--runs", type=int, default=1, help="number of eval runs (pin 3 for baselines)")
     parser.add_argument("--record-baseline", metavar="PATH", help="write baseline metrics JSON")
     parser.add_argument("--gate", metavar="PATH", help="compare against baseline JSON; exit 1 on failure")
     args = parser.parse_args(argv)

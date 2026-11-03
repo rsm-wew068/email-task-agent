@@ -10,12 +10,49 @@ writes stubbed).
 
 from __future__ import annotations
 
+import itertools
+import threading
+import time
+
 from fastapi import FastAPI
 
 from email_task_agent import __version__
 from email_task_agent.app.deps import Deps
+from email_task_agent.store import Store
 
-__all__ = ["Deps", "app_factory", "build_default_app", "create_app"]
+__all__ = ["Deps", "app_factory", "build_default_app", "create_app", "prepare_database"]
+
+
+def prepare_database(
+    store: Store,
+    *,
+    owner_email: str,
+    attempts: int | None = None,
+    _sleep=time.sleep,
+) -> None:
+    """Migrate + seed AFTER boot, retrying with backoff.
+
+    Boot must never block on the database: managed poolers (Supavisor) deregister
+    tenants transiently (free-tier pause/wake, restores, known registry bugs), and
+    a crash during that window makes a deployed container flap on "app starting".
+    While this loop is waiting, pages render the offline banner; once it lands,
+    everything self-heals (seeding is idempotent per thread).
+    """
+    from email_task_agent.db import connect, migrate
+    from email_task_agent.demo.seed import seed_demo_instance
+
+    delay = 2.0
+    for round_ in itertools.count():
+        if attempts is not None and round_ >= attempts:
+            raise RuntimeError(f"database unreachable after {attempts} prepare attempts")
+        try:
+            migrate(connect())
+            seed_demo_instance(store, owner_email=owner_email)
+            return
+        except Exception as error:  # noqa: BLE001 - background loop keeps retrying
+            print(f"database prepare failed ({error}); retrying in {delay:.0f}s", flush=True)
+            _sleep(delay)
+            delay = min(delay * 2, 30.0)
 
 
 def create_app(deps: Deps) -> FastAPI:
@@ -46,11 +83,9 @@ def build_default_app() -> FastAPI:
     owner_email = "alex@fernwoodlabs.com"
 
     if settings().database_url:
-        from email_task_agent.db import connect, connect_with_retries, migrate
+        from email_task_agent.db import connect
         from email_task_agent.store import PostgresStore
 
-        conn = connect_with_retries()
-        migrate(conn)
         store = PostgresStore(lambda: connect())
     else:
         from email_task_agent.memory import MemoryStore
@@ -58,9 +93,18 @@ def build_default_app() -> FastAPI:
         store = MemoryStore()
     mode = settings().instance_mode if settings().database_url else "demo"
 
-    from email_task_agent.demo.seed import seed_demo_instance
+    if settings().database_url:
+        threading.Thread(
+            target=prepare_database,
+            args=(store,),
+            kwargs={"owner_email": owner_email},
+            daemon=True,
+            name="db-prepare",
+        ).start()
+    else:
+        from email_task_agent.demo.seed import seed_demo_instance
 
-    seed_demo_instance(store, owner_email=owner_email)
+        seed_demo_instance(store, owner_email=owner_email)
 
     chat_service = None
     sync_runner = None

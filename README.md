@@ -72,13 +72,14 @@ on `127.0.0.1:8000`, Next.js on `0.0.0.0:7860` (`deploy/hf-space.Dockerfile`, Do
 
 - Space secrets/variables: `OR_API_KEY` (chat model), `INSTANCE_MODE=demo`, and
   `DATABASE_URL` — the **session pooler** form of a Supabase project that holds ONLY
-  synthetic data (D8). Two Supabase facts matter on Spaces: the direct
-  `db.<ref>.supabase.co` host is IPv6-only (Spaces have IPv4 egress only), and the
-  pooler hostname is **`aws-0-<region>` for older projects vs `aws-1-<region>` for
-  newer ones** — the wrong pool gives `tenant/user not found`. Copy the exact string
-  from your project's Connect dialog ([Supabase docs](https://supabase.com/docs/guides/database/connecting-to-postgres)).
-  The startup connection retries with backoff so brief pooler blips cannot crash the
-  container boot.
+  synthetic data (D8). Three Supabase facts matter on Spaces: the direct
+  `db.<ref>.supabase.co` host is IPv6-only (Spaces have IPv4 egress only); the pooler
+  hostname is **`aws-0-<region>` for older projects vs `aws-1-<region>` for newer ones**
+  (wrong pool gives `tenant/user not found` — copy the exact string from your project's
+  Connect dialog, [Supabase docs](https://supabase.com/docs/guides/database/connecting-to-postgres));
+  and the shared pooler transiently deregisters tenants on free-tier pause/wake, so
+  **boot never blocks on the database** — migrate+seed run in a retrying background
+  thread and pages render the offline banner until it lands, then self-heal.
 - That database is shared with the private instance on purpose (it is all synthetic) —
   never point a public demo at a database containing real mail. Chat is capped at
   `DEMO_DAILY_TURN_CAP` (100) turns/day across all visitors.
